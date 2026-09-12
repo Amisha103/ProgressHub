@@ -3,7 +3,7 @@ package com.progresshub.user;
 import com.progresshub.user.dto.RegisterRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import com.progresshub.common.exception.EmailAlreadyExistsException;
 @Service
 public class UserService {
 
@@ -21,7 +21,7 @@ public class UserService {
     public User register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already registered");
+            throw new EmailAlreadyExistsException("Email already registered");
         }
 
         User user = new User();

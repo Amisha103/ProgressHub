@@ -1,6 +1,7 @@
 package com.progresshub.user;
 
 import com.progresshub.user.dto.RegisterRequest;
+import com.progresshub.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,8 +16,17 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public User register(@Valid @RequestBody RegisterRequest request) {
-        return userService.register(request);
+    public UserResponse register(@Valid @RequestBody RegisterRequest request) {
+
+        User user = userService.register(request);
+
+        return new UserResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getCreatedAt(),
+                user.getUpdatedAt()
+        );
     }
 
     @GetMapping("/email")

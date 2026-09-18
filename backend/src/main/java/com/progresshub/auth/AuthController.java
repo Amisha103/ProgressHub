@@ -21,16 +21,18 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request
     ) {
 
-        User user = authService.login(
+        AuthService.LoginResult result = authService.login(
                 request.getEmail(),
                 request.getPassword()
         );
+
+        User user = result.user();
 
         return new LoginResponse(
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
-                null
+                result.token()
         );
     }
 }

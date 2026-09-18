@@ -42,4 +42,14 @@ public class GlobalExceptionHandler {
                 "errors", errors
         );
     }
+    @ExceptionHandler(InvalidCredentialsException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Map<String, Object> handleInvalidCredentials(
+            InvalidCredentialsException exception
+    ) {
+        return Map.of(
+                "status", 401,
+                "message", exception.getMessage()
+        );
+    }
 }

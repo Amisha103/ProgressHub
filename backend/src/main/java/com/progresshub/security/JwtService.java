@@ -61,6 +61,7 @@ public class JwtService {
             extractAllClaims(token);
             return true;
         } catch (Exception exception) {
+
             return false;
         }
     }

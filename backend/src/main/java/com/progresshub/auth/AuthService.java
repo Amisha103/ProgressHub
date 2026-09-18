@@ -5,7 +5,7 @@ import com.progresshub.user.User;
 import com.progresshub.user.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import com.progresshub.common.exception.InvalidCredentialsException;
 @Service
 public class AuthService {
 
@@ -29,14 +29,14 @@ public class AuthService {
                 .orElse(null);
 
         if (user == null) {
-            throw new RuntimeException("Invalid email or password");
+            throw new InvalidCredentialsException("Invalid email or password");
         }
 
         boolean passwordMatches =
                 passwordEncoder.matches(password, user.getPasswordHash());
 
         if (!passwordMatches) {
-            throw new RuntimeException("Invalid email or password");
+            throw new InvalidCredentialsException("Invalid email or password");
         }
 
         String token = jwtService.generateToken(

@@ -4,6 +4,7 @@ import com.progresshub.user.dto.RegisterRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.progresshub.common.exception.EmailAlreadyExistsException;
+import com.progresshub.user.dto.UpdateProfileRequest;
 @Service
 public class UserService {
 
@@ -38,5 +39,16 @@ public class UserService {
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElse(null);
+    }
+    public User updateProfile(String email, UpdateProfileRequest request) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found")
+                );
+
+        user.setName(request.getName());
+
+        return userRepository.save(user);
     }
 }

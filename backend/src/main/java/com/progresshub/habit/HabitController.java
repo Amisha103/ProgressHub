@@ -6,7 +6,7 @@ import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-.
+
 @RestController
 @RequestMapping("/api/habits")
 public class HabitController {
@@ -77,6 +77,30 @@ public class HabitController {
         String userEmail = authentication.getName();
 
         Habit habit = habitService.createHabit(userEmail, request);
+
+        return new HabitResponse(
+                habit.getId(),
+                habit.getCategory().getId(),
+                habit.getCategory().getName(),
+                habit.getName(),
+                habit.getIcon(),
+                habit.getColor(),
+                habit.getReminderTime(),
+                habit.getResetTime(),
+                habit.getStatus(),
+                habit.getCreatedAt(),
+                habit.getUpdatedAt()
+        );
+    }
+
+    @PatchMapping("/{id}/archive")
+    public HabitResponse archiveHabit(
+            Authentication authentication,
+            @PathVariable Long id) {
+
+        String userEmail = authentication.getName();
+
+        Habit habit = habitService.archiveHabit(userEmail, id);
 
         return new HabitResponse(
                 habit.getId(),

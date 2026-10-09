@@ -96,4 +96,21 @@ public class HabitService {
         // Save the habit in the database.
         return habitRepository.save(habit);
     }
+
+    public Habit archiveHabit(String userEmail, Long habitId) {
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        Habit habit = habitRepository
+                .findByIdAndUserId(habitId, user.getId())
+                .orElseThrow(() ->
+                        new RuntimeException("Habit not found"));
+
+        habit.setStatus(HabitStatus.ARCHIVED);
+
+        return habitRepository.save(habit);
+    }
+
 }

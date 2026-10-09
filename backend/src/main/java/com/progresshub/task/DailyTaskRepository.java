@@ -28,4 +28,16 @@ public interface DailyTaskRepository
             Long habitId,
             LocalDate taskDate
     );
+
+    List<DailyTask> findByHabitUserIdAndTaskDateBetween(
+            Long userId,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    List<DailyTask> findByHabitUserIdAndTaskDateOrderByIdAsc(
+            Long userId,
+            LocalDate taskDate);
+
+
 }

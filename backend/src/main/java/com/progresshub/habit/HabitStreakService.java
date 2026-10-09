@@ -8,9 +8,12 @@ import com.progresshub.task.DailyTaskStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class HabitStreakService {
@@ -20,13 +23,16 @@ public class HabitStreakService {
 
     private final HabitRepository habitRepository;
     private final DailyTaskRepository dailyTaskRepository;
+    private final HabitScheduleRepository habitScheduleRepository;
 
     public HabitStreakService(
             HabitRepository habitRepository,
-            DailyTaskRepository dailyTaskRepository
+            DailyTaskRepository dailyTaskRepository,
+            HabitScheduleRepository habitScheduleRepository
     ) {
         this.habitRepository = habitRepository;
         this.dailyTaskRepository = dailyTaskRepository;
+        this.habitScheduleRepository = habitScheduleRepository;
     }
 
     @Transactional(readOnly = true)
@@ -44,8 +50,30 @@ public class HabitStreakService {
                                 LocalDate.now(APP_ZONE)
                         );
 
-        int currentStreak = calculateCurrentStreak(tasks);
-        int longestStreak = calculateLongestStreak(tasks);
+        Set<DayOfWeek> scheduledDays =
+                habitScheduleRepository.findByHabitId(habitId)
+                        .stream()
+                        .map(HabitSchedule::getDayOfWeek)
+                        .collect(Collectors.toSet());
+
+        // No schedule entries means every day is expected.
+        if (scheduledDays.isEmpty()) {
+            scheduledDays = Set.of(
+                    DayOfWeek.MONDAY,
+                    DayOfWeek.TUESDAY,
+                    DayOfWeek.WEDNESDAY,
+                    DayOfWeek.THURSDAY,
+                    DayOfWeek.FRIDAY,
+                    DayOfWeek.SATURDAY,
+                    DayOfWeek.SUNDAY
+            );
+        }
+
+        int currentStreak =
+                calculateCurrentStreak(tasks, scheduledDays);
+
+        int longestStreak =
+                calculateLongestStreak(tasks, scheduledDays);
 
         return new HabitStreakResponse(
                 habit.getId(),
@@ -55,73 +83,108 @@ public class HabitStreakService {
         );
     }
 
-    private int calculateCurrentStreak(List<DailyTask> tasks) {
+    private int calculateCurrentStreak(
+            List<DailyTask> tasks,
+            Set<DayOfWeek> scheduledDays
+    ) {
+        LocalDate today = LocalDate.now(APP_ZONE);
 
         if (tasks.isEmpty()) {
             return 0;
         }
 
-        LocalDate expectedDate = LocalDate.now(APP_ZONE);
+        var tasksByDate = tasks.stream()
+                .collect(Collectors.toMap(
+                        DailyTask::getTaskDate,
+                        task -> task
+                ));
+
+        DailyTask todayTask = tasksByDate.get(today);
+
+        // An explicitly skipped task today breaks the streak.
+        if (todayTask != null
+                && todayTask.getStatus() == DailyTaskStatus.SKIPPED) {
+            return 0;
+        }
+
+        // Start today if completed; otherwise start from yesterday.
+        LocalDate date = today;
+
+        if (todayTask == null
+                || todayTask.getStatus() != DailyTaskStatus.COMPLETED) {
+            date = today.minusDays(1);
+        }
+
         int streak = 0;
 
-        for (DailyTask task : tasks) {
+        // Count backward through scheduled days only.
+        while (!date.isBefore(tasks.get(tasks.size() - 1).getTaskDate())) {
 
-            if (task.getTaskDate().isAfter(expectedDate)) {
+            if (!scheduledDays.contains(date.getDayOfWeek())) {
+                date = date.minusDays(1);
                 continue;
             }
 
-            if (task.getTaskDate().isBefore(expectedDate)) {
-                if (task.getTaskDate().equals(expectedDate.minusDays(1))) {
-                    expectedDate = task.getTaskDate();
-                } else {
-                    break;
-                }
-            }
+            DailyTask task = tasksByDate.get(date);
 
-            if (task.getTaskDate().equals(expectedDate)
-                    && task.getStatus() == DailyTaskStatus.COMPLETED) {
-                streak++;
-                expectedDate = expectedDate.minusDays(1);
-            } else {
+            if (task == null
+                    || task.getStatus() != DailyTaskStatus.COMPLETED) {
                 break;
             }
+
+            streak++;
+            date = date.minusDays(1);
         }
 
         return streak;
     }
 
-    private int calculateLongestStreak(List<DailyTask> tasks) {
-
+    private int calculateLongestStreak(
+            List<DailyTask> tasks,
+            Set<DayOfWeek> scheduledDays
+    ) {
         if (tasks.isEmpty()) {
             return 0;
         }
 
-        List<DailyTask> ascendingTasks = tasks.stream()
-                .sorted((a, b) ->
-                        a.getTaskDate().compareTo(b.getTaskDate()))
-                .toList();
+        var tasksByDate = tasks.stream()
+                .collect(Collectors.toMap(
+                        DailyTask::getTaskDate,
+                        task -> task
+                ));
+
+        LocalDate firstDate = tasks.stream()
+                .map(DailyTask::getTaskDate)
+                .min(LocalDate::compareTo)
+                .orElseThrow();
+
+        LocalDate lastDate = tasks.stream()
+                .map(DailyTask::getTaskDate)
+                .max(LocalDate::compareTo)
+                .orElseThrow();
 
         int longest = 0;
         int current = 0;
-        LocalDate previousDate = null;
 
-        for (DailyTask task : ascendingTasks) {
+        for (LocalDate date = firstDate;
+             !date.isAfter(lastDate);
+             date = date.plusDays(1)) {
 
-            if (task.getStatus() != DailyTaskStatus.COMPLETED) {
-                current = 0;
-                previousDate = task.getTaskDate();
+            // Rest days do not break a streak.
+            if (!scheduledDays.contains(date.getDayOfWeek())) {
                 continue;
             }
 
-            if (previousDate != null
-                    && task.getTaskDate().equals(previousDate.plusDays(1))) {
-                current++;
-            } else {
-                current = 1;
-            }
+            DailyTask task = tasksByDate.get(date);
 
-            longest = Math.max(longest, current);
-            previousDate = task.getTaskDate();
+            if (task != null
+                    && task.getStatus() == DailyTaskStatus.COMPLETED) {
+                current++;
+                longest = Math.max(longest, current);
+            } else {
+                // A missing or non-completed scheduled task breaks it.
+                current = 0;
+            }
         }
 
         return longest;

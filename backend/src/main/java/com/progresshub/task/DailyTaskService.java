@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+
 @Service
 public class DailyTaskService {
 
@@ -86,5 +87,20 @@ public class DailyTaskService {
         }
 
         return dailyTaskRepository.save(task);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DailyTask> getTaskHistory(
+            String userEmail,
+            LocalDate taskDate) {
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        return dailyTaskRepository
+                .findByHabitUserIdAndTaskDateOrderByIdAsc(
+                        user.getId(),
+                        taskDate);
     }
 }

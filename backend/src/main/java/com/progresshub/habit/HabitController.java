@@ -6,15 +6,27 @@ import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import com.progresshub.user.User;
+import com.progresshub.user.UserRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/habits")
 public class HabitController {
 
     private final HabitService habitService;
+    private final HabitStreakService habitStreakService;
+    private final UserRepository userRepository;
 
-    public HabitController(HabitService habitService) {
+    public HabitController(
+            HabitService habitService,
+            HabitStreakService habitStreakService,
+            UserRepository userRepository
+    ) {
         this.habitService = habitService;
+        this.habitStreakService = habitStreakService;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -116,7 +128,17 @@ public class HabitController {
                 habit.getUpdatedAt()
         );
     }
+    @GetMapping("/{id}/streak")
+    public HabitStreakResponse getHabitStreak(
+            Authentication authentication,
+            @PathVariable("id") Long habitId
+    ) {
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "User not found"));
 
+        return habitStreakService.getStreak(user.getId(), habitId);
+    }
 
 }
 

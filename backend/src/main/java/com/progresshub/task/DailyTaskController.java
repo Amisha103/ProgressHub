@@ -4,6 +4,9 @@ package com.progresshub.task;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.RequestParam;
+import java.time.LocalDate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,5 +46,21 @@ public class DailyTaskController {
                 request.getStatus());
 
         return DailyTaskResponse.from(task);
+    }
+
+
+    @GetMapping("/history")
+    public List<DailyTaskResponse> getTaskHistory(
+            Authentication authentication,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date) {
+
+        String userEmail = authentication.getName();
+
+        return dailyTaskService.getTaskHistory(userEmail, date)
+                .stream()
+                .map(DailyTaskResponse::from)
+                .toList();
     }
 }

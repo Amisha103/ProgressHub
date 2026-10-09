@@ -24,4 +24,8 @@ public interface DailyTaskRepository
             Long habitId,
             LocalDate taskDate
     );
+    List<DailyTask> findByHabitIdAndTaskDateLessThanEqualOrderByTaskDateDesc(
+            Long habitId,
+            LocalDate taskDate
+    );
 }

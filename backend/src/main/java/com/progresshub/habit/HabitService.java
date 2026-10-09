@@ -24,6 +24,46 @@ public class HabitService {
         this.categoryRepository = categoryRepository;
     }
 
+    public Habit updateHabit(
+            String userEmail,
+            Long habitId,
+            CreateHabitRequest request) {
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        Habit habit = habitRepository
+                .findByIdAndUserId(habitId, user.getId())
+                .orElseThrow(() ->
+                        new RuntimeException("Habit not found"));
+
+        Category category = categoryRepository
+                .findByIdAndUserId(
+                        request.getCategoryId(),
+                        user.getId())
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Category not found for this user"));
+
+        habit.setCategory(category);
+        habit.setName(request.getName());
+        habit.setIcon(request.getIcon());
+        habit.setColor(request.getColor());
+        habit.setReminderTime(request.getReminderTime());
+        habit.setResetTime(request.getResetTime());
+
+        return habitRepository.save(habit);
+    }
+
+    public java.util.List<Habit> getHabits(String userEmail) {
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return habitRepository.findByUserId(user.getId());
+    }
+
     public Habit createHabit(
             String userEmail,
             CreateHabitRequest request) {

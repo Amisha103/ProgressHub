@@ -66,4 +66,11 @@ public class CreateHabitRequest {
     public void setResetTime(LocalTime resetTime) {
         this.resetTime = resetTime;
     }
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
 }

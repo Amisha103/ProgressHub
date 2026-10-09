@@ -61,7 +61,10 @@ public class HabitService {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return habitRepository.findByUserId(user.getId());
+        return habitRepository.findByUserIdAndStatus(
+                user.getId(),
+                HabitStatus.ACTIVE
+        );
     }
 
     public Habit createHabit(

@@ -8,7 +8,8 @@ import com.progresshub.user.User;
 import com.progresshub.user.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.progresshub.common.exception.ResourceNotFoundException;
+import java.time.ZoneId;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -32,9 +33,9 @@ public class DailyTaskService {
     @Transactional
     public List<DailyTask> getOrCreateTodayTasks(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
 
         List<Habit> activeHabits =
                 habitRepository.findByUserIdAndStatus(
@@ -70,11 +71,11 @@ public class DailyTaskService {
         }
 
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         DailyTask task = dailyTaskRepository
                 .findByIdAndHabitUserId(taskId, user.getId())
-                .orElseThrow(() -> new RuntimeException("Daily task not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Daily task not found"));
 
         task.setStatus(newStatus);
 

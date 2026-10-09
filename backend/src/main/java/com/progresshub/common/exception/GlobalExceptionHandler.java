@@ -5,7 +5,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
+import com.progresshub.common.exception.ResourceNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,4 +52,27 @@ public class GlobalExceptionHandler {
                 "message", exception.getMessage()
         );
     }
+
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Object> handleIllegalArgument(
+            IllegalArgumentException exception
+    ) {
+        return Map.of(
+                "status", 400,
+                "message", exception.getMessage()
+        );
+    }
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, Object> handleResourceNotFound(
+            ResourceNotFoundException exception
+    ) {
+        return Map.of(
+                "status", 404,
+                "message", exception.getMessage()
+        );
+    }
+
 }

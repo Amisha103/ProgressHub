@@ -17,9 +17,9 @@ export function HabitsProvider({ children }) {
 export function useSharedHabits() {
   const context = useContext(HabitsContext)
 
-  if (!context) {
+  if (context === null) {
     throw new Error(
-      'useSharedHabits must be used inside HabitsProvider',
+      'useSharedHabits must be used inside HabitsProvider.',
     )
   }
 

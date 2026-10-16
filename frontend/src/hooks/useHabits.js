@@ -1,44 +1,74 @@
 
-import { useState } from 'react'
-import demoHabits from '../data/demoHabits'
+import { useCallback, useEffect, useState } from 'react'
+import habitService from '../services/habitService'
+
+function mapHabit(habit) {
+  return {
+    ...habit,
+    category: habit.categoryName || 'General',
+    time: habit.reminderTime || '',
+  }
+}
 
 export default function useHabits() {
-  const [habits, setHabits] = useState(() =>
-    demoHabits.map((habit) => ({ ...habit })),
-  )
-
+  const [habits, setHabits] = useState([])
   const [completedIds, setCompletedIds] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  function addHabit(habitData) {
-    const newHabit = {
-      ...habitData,
-      id: Date.now(),
-      completed: false,
+  const loadHabits = useCallback(async () => {
+    setLoading(true)
+    setError('')
+
+    try {
+      const data = await habitService.getAll()
+      setHabits(data.map(mapHabit))
+    } catch (err) {
+      setError(err.message || 'Unable to load habits.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!localStorage.getItem('progresshub-token')) {
+      setError('Please log in to load your habits.')
+      setLoading(false)
+      return
     }
 
-    setHabits((currentHabits) => [...currentHabits, newHabit])
-  }
+    loadHabits()
+  }, [loadHabits])
 
-  function deleteHabit(id) {
-    setHabits((currentHabits) =>
-      currentHabits.filter((habit) => habit.id !== id),
+  const addHabit = useCallback((habit) => {
+    setHabits((current) => [
+      ...current,
+      mapHabit(habit),
+    ])
+  }, [])
+
+  const deleteHabit = useCallback(async (id) => {
+    await habitService.archive(id)
+
+    setHabits((current) =>
+      current.filter((habit) => habit.id !== id),
     )
 
-    setCompletedIds((currentIds) =>
-      currentIds.filter((completedId) => completedId !== id),
+    setCompletedIds((current) =>
+      current.filter((completedId) => completedId !== id),
     )
-  }
+  }, [])
 
-  function toggleHabit(id) {
-    setCompletedIds((currentIds) =>
-      currentIds.includes(id)
-        ? currentIds.filter((completedId) => completedId !== id)
-        : [...currentIds, id],
+  const toggleHabit = useCallback((id) => {
+    setCompletedIds((current) =>
+      current.includes(id)
+        ? current.filter((completedId) => completedId !== id)
+        : [...current, id],
     )
-  }
+  }, [])
 
-  const completedCount = completedIds.filter((id) =>
-    habits.some((habit) => habit.id === id),
+  const completedCount = habits.filter((habit) =>
+    completedIds.includes(habit.id),
   ).length
 
   const progress = habits.length
@@ -50,6 +80,9 @@ export default function useHabits() {
     completedIds,
     completedCount,
     progress,
+    loading,
+    error,
+    loadHabits,
     addHabit,
     deleteHabit,
     toggleHabit,

@@ -6,7 +6,7 @@ export default function Analytics() {
   const { habits, completedIds, completedCount, progress } =
     useSharedHabits()
 
-  const remainingCount = Math.max(habits.length - completedCount, 0)
+  const remainingCount = habits.length - completedCount
 
   const categories = habits.reduce((result, habit) => {
     const category = habit.category || 'General'
@@ -16,16 +16,16 @@ export default function Analytics() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <section>
         <h2 className="text-lg font-bold text-slate-800">
           Your progress at a glance
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          See how your current habits are organized and completed.
+          Understand your current habits and daily completion.
         </p>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <p className="text-sm text-slate-500">Total habits</p>
           <p className="mt-2 text-3xl font-bold text-slate-900">
@@ -46,7 +46,7 @@ export default function Analytics() {
             {remainingCount}
           </p>
         </Card>
-      </div>
+      </section>
 
       <Card>
         <div className="flex items-center justify-between gap-4">
@@ -58,7 +58,10 @@ export default function Analytics() {
               {completedCount} of {habits.length} habits completed
             </p>
           </div>
-          <p className="text-2xl font-bold text-indigo-600">{progress}%</p>
+
+          <p className="text-2xl font-bold text-indigo-600">
+            {progress}%
+          </p>
         </div>
 
         <div
@@ -88,7 +91,9 @@ export default function Analytics() {
         ) : (
           <div className="space-y-4">
             {Object.entries(categories).map(([category, count]) => {
-              const percentage = Math.round((count / habits.length) * 100)
+              const percentage = Math.round(
+                (count / habits.length) * 100,
+              )
 
               return (
                 <div key={category}>

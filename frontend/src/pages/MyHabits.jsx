@@ -4,7 +4,7 @@ import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import HabitForm from '../components/habits/HabitForm'
 import HabitList from '../components/habits/HabitList'
-import useHabits from '../hooks/useHabits'
+import { useSharedHabits } from '../context/HabitsContext'
 
 export default function MyHabits() {
   const {
@@ -13,7 +13,7 @@ export default function MyHabits() {
     addHabit,
     deleteHabit,
     toggleHabit,
-  } = useHabits()
+  } = useSharedHabits()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
 

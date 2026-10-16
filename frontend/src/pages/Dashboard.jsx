@@ -2,7 +2,7 @@
 import { useMemo } from 'react'
 import Card from '../components/ui/Card'
 import HabitList from '../components/habits/HabitList'
-import useHabits from '../hooks/useHabits'
+import { useSharedHabits } from '../context/HabitsContext'
 
 export default function Dashboard() {
   const {
@@ -12,7 +12,7 @@ export default function Dashboard() {
     deleteHabit,
     completedCount,
     progress,
-  } = useHabits()
+  } = useSharedHabits()
 
   const today = new Date().toLocaleDateString('en-IN', {
     weekday: 'long',

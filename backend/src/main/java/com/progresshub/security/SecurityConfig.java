@@ -1,3 +1,4 @@
+
 package com.progresshub.security;
 
 import org.springframework.context.annotation.Bean;
@@ -18,7 +19,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http
+    ) throws Exception {
 
         JwtAuthenticationFilter jwtAuthenticationFilter =
                 new JwtAuthenticationFilter(jwtService);
@@ -26,8 +29,10 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/users/register").permitAll()
-                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/register"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

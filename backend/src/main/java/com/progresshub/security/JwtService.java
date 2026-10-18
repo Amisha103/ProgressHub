@@ -1,3 +1,4 @@
+
 package com.progresshub.security;
 
 import io.jsonwebtoken.Claims;
@@ -14,26 +15,41 @@ import java.util.Date;
 public class JwtService {
 
     private final SecretKey secretKey;
+    private final long accessTokenExpirationMs;
 
-    public JwtService(@Value("${jwt.secret}") String secret) {
+    public JwtService(
+            @Value("${jwt.secret}") String secret,
+            @Value("${jwt.access-token-expiration-ms:900000}")
+            long accessTokenExpirationMs
+    ) {
         this.secretKey = Keys.hmacShaKeyFor(
                 secret.getBytes(StandardCharsets.UTF_8)
         );
+
+        if (accessTokenExpirationMs <= 0) {
+            throw new IllegalArgumentException(
+                    "JWT access-token expiration must be positive"
+            );
+        }
+
+        this.accessTokenExpirationMs = accessTokenExpirationMs;
     }
 
     public String generateToken(Long userId, String email) {
+        Date now = new Date();
 
         return Jwts.builder()
                 .subject(email)
                 .claim("userId", userId)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 86400000))
+                .issuedAt(now)
+                .expiration(
+                        new Date(now.getTime() + accessTokenExpirationMs)
+                )
                 .signWith(secretKey)
                 .compact();
     }
 
     public Claims extractAllClaims(String token) {
-
         return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
@@ -42,13 +58,10 @@ public class JwtService {
     }
 
     public String extractEmail(String token) {
-
-        return extractAllClaims(token)
-                .getSubject();
+        return extractAllClaims(token).getSubject();
     }
 
     public Long extractUserId(String token) {
-
         Number userId = extractAllClaims(token)
                 .get("userId", Number.class);
 
@@ -56,12 +69,10 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token) {
-
         try {
             extractAllClaims(token);
             return true;
         } catch (Exception exception) {
-
             return false;
         }
     }

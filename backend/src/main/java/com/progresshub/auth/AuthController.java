@@ -1,7 +1,9 @@
+
 package com.progresshub.auth;
 
 import com.progresshub.auth.dto.LoginRequest;
 import com.progresshub.auth.dto.LoginResponse;
+import com.progresshub.auth.dto.RegisterRequest;
 import com.progresshub.user.User;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -20,11 +22,26 @@ public class AuthController {
     public LoginResponse login(
             @Valid @RequestBody LoginRequest request
     ) {
-
         AuthService.LoginResult result = authService.login(
                 request.getEmail(),
                 request.getPassword()
         );
+
+        User user = result.user();
+
+        return new LoginResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                result.token()
+        );
+    }
+
+    @PostMapping("/register")
+    public LoginResponse register(
+            @Valid @RequestBody RegisterRequest request
+    ) {
+        AuthService.LoginResult result = authService.register(request);
 
         User user = result.user();
 

@@ -1,3 +1,4 @@
+
 package com.progresshub.security;
 
 import jakarta.servlet.FilterChain;
@@ -26,12 +27,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String authorizationHeader =
-                request.getHeader("Authorization");
+        SecurityContextHolder.clearContext();
+
+        String authorizationHeader = request.getHeader("Authorization");
 
         if (authorizationHeader == null ||
                 !authorizationHeader.startsWith("Bearer ")) {
-
             filterChain.doFilter(request, response);
             return;
         }
@@ -39,12 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authorizationHeader.substring(7);
 
         if (jwtService.isTokenValid(token)) {
-
-
-
             String email = jwtService.extractEmail(token);
-
-
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
@@ -53,11 +49,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             Collections.emptyList()
                     );
 
-            SecurityContextHolder
-                    .getContext()
+            SecurityContextHolder.getContext()
                     .setAuthentication(authentication);
-
         }
+
         filterChain.doFilter(request, response);
     }
 }

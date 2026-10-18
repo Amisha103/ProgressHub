@@ -19,18 +19,26 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService
+            JwtService jwtService,
+            RefreshTokenService refreshTokenService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
     }
 
-    public LoginResult login(String email, String password) {
+    @Transactional
+    public LoginResult login(
+            String email,
+            String password,
+            boolean rememberMe
+    ) {
         String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
 
         User user = userRepository.findByEmail(normalizedEmail)
@@ -43,12 +51,15 @@ public class AuthService {
             );
         }
 
-        String token = jwtService.generateToken(
+        String accessToken = jwtService.generateToken(
                 user.getId(),
                 user.getEmail()
         );
 
-        return new LoginResult(user, token);
+        RefreshTokenService.CreatedRefreshToken refreshToken =
+                refreshTokenService.createSession(user, rememberMe);
+
+        return new LoginResult(user, accessToken, refreshToken);
     }
 
     @Transactional
@@ -71,14 +82,24 @@ public class AuthService {
 
         User savedUser = userRepository.saveAndFlush(user);
 
-        String token = jwtService.generateToken(
+        String accessToken = jwtService.generateToken(
                 savedUser.getId(),
                 savedUser.getEmail()
         );
 
-        return new LoginResult(savedUser, token);
+        RefreshTokenService.CreatedRefreshToken refreshToken =
+                refreshTokenService.createSession(
+                        savedUser,
+                        request.isRememberMe()
+                );
+
+        return new LoginResult(savedUser, accessToken, refreshToken);
     }
 
-    public record LoginResult(User user, String token) {
+    public record LoginResult(
+            User user,
+            String token,
+            RefreshTokenService.CreatedRefreshToken refreshToken
+    ) {
     }
 }

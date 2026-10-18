@@ -5,7 +5,43 @@ function getToken() {
   return localStorage.getItem('progresshub-token')
 }
 
-async function apiRequest(endpoint, options = {}) {
+async function refreshAccessToken() {
+  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    localStorage.removeItem('progresshub-token')
+    localStorage.removeItem('progresshub-user')
+    return false
+  }
+
+  const data = await response.json()
+
+  if (!data?.token || !data?.id) {
+    localStorage.removeItem('progresshub-token')
+    localStorage.removeItem('progresshub-user')
+    return false
+  }
+
+  localStorage.setItem('progresshub-token', data.token)
+  localStorage.setItem(
+    'progresshub-user',
+    JSON.stringify({
+      id: data.id,
+      name: data.name,
+      email: data.email,
+    }),
+  )
+
+  return true
+}
+
+async function apiRequest(endpoint, options = {}, hasRetried = false) {
   const token = getToken()
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -16,6 +52,17 @@ async function apiRequest(endpoint, options = {}) {
       ...options.headers,
     },
   })
+
+  if (response.status === 401 && !hasRetried) {
+    const refreshed = await refreshAccessToken()
+
+    if (refreshed) {
+      return apiRequest(endpoint, options, true)
+    }
+
+    window.location.replace('/login')
+    throw new Error('Your session has expired. Please sign in again.')
+  }
 
   if (!response.ok) {
     const message = await response.text()

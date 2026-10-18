@@ -1,6 +1,6 @@
 
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import authService from '../services/authService'
 import Button from '../components/ui/Button'
 
@@ -10,6 +10,7 @@ export default function Login() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -19,7 +20,7 @@ export default function Login() {
     setLoading(true)
 
     try {
-      await authService.login(email.trim(), password)
+      await authService.login(email.trim(), password, rememberMe)
 
       const destination = location.state?.from || '/'
       navigate(destination, { replace: true })
@@ -88,6 +89,16 @@ export default function Login() {
             />
           </div>
 
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(event) => setRememberMe(event.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 accent-indigo-600"
+            />
+            <span>Remember me for 90 days</span>
+          </label>
+
           {error && (
             <p
               role="alert"
@@ -101,6 +112,16 @@ export default function Login() {
             {loading ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
+
+        <p className="mt-6 text-center text-sm text-slate-600">
+          Don&apos;t have an account?{' '}
+          <Link
+            to="/register"
+            className="font-semibold text-indigo-600 hover:text-indigo-700"
+          >
+            Create account
+          </Link>
+        </p>
       </section>
     </main>
   )

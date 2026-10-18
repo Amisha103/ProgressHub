@@ -1,5 +1,7 @@
 
-import { NavLink } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import authService from '../../services/authService'
 
 const navigation = [
   { label: 'Dashboard', path: '/', icon: '⌂' },
@@ -9,6 +11,27 @@ const navigation = [
 ]
 
 export default function Sidebar({ onNavigate }) {
+  const navigate = useNavigate()
+  const [loggingOut, setLoggingOut] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleLogout() {
+    if (loggingOut) return
+
+    setLoggingOut(true)
+    setError('')
+
+    try {
+      await authService.logout()
+      onNavigate?.()
+      navigate('/login', { replace: true })
+    } catch (err) {
+      setError(err.message || 'Unable to log out. Please try again.')
+    } finally {
+      setLoggingOut(false)
+    }
+  }
+
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-slate-100 bg-white px-5 py-6">
       <div className="mb-10 flex items-center gap-3 px-2">
@@ -60,6 +83,24 @@ export default function Sidebar({ onNavigate }) {
           Consistency beats perfection. One day at a time.
         </p>
       </div>
+
+      {error && (
+        <p role="alert" className="mt-3 text-xs text-red-600">
+          {error}
+        </p>
+      )}
+
+      <button
+        type="button"
+        onClick={handleLogout}
+        disabled={loggingOut}
+        className="mt-4 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-600 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <span className="flex h-6 w-6 items-center justify-center text-lg">
+          ↪
+        </span>
+        {loggingOut ? 'Signing out...' : 'Log out'}
+      </button>
     </aside>
   )
 }

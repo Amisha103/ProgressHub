@@ -1,8 +1,9 @@
+
 package com.progresshub.auth.dto;
 
 public class LoginResponse {
 
-    private Long userId;
+    private Long id;
     private String name;
     private String email;
     private String token;
@@ -11,19 +12,19 @@ public class LoginResponse {
     }
 
     public LoginResponse(
-            Long userId,
+            Long id,
             String name,
             String email,
             String token
     ) {
-        this.userId = userId;
+        this.id = id;
         this.name = name;
         this.email = email;
         this.token = token;
     }
 
-    public Long getUserId() {
-        return userId;
+    public Long getId() {
+        return id;
     }
 
     public String getName() {

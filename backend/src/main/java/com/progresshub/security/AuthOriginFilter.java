@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 @Component
@@ -21,7 +22,10 @@ public class AuthOriginFilter extends OncePerRequestFilter {
             @Value("${app.frontend-origin:http://localhost:5173}")
             String frontendOrigin
     ) {
-        this.allowedOrigins = Set.of(frontendOrigin);
+        this.allowedOrigins = new HashSet<>();
+        this.allowedOrigins.add(frontendOrigin);
+        this.allowedOrigins.add("http://localhost:5173");
+        this.allowedOrigins.add("http://localhost:5174");
     }
 
     @Override
@@ -32,11 +36,14 @@ public class AuthOriginFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         String path = request.getRequestURI();
+
         boolean cookieAuthEndpoint =
                 path.equals("/api/auth/refresh")
                         || path.equals("/api/auth/logout");
 
-        if (cookieAuthEndpoint && "POST".equalsIgnoreCase(request.getMethod())) {
+        if (cookieAuthEndpoint
+                && "POST".equalsIgnoreCase(request.getMethod())) {
+
             String origin = request.getHeader("Origin");
 
             if (origin == null || !allowedOrigins.contains(origin)) {

@@ -105,10 +105,12 @@ public class DailyTaskService {
             Long taskId,
             DailyTaskStatus newStatus) {
 
-        if (newStatus == null || newStatus == DailyTaskStatus.PENDING) {
+
+        if (newStatus == null) {
             throw new IllegalArgumentException(
-                    "Status must be COMPLETED or SKIPPED");
+                    "Status cannot be null");
         }
+
 
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() ->
@@ -143,4 +145,23 @@ public class DailyTaskService {
                 .findByHabitUserIdAndTaskDateOrderByIdAsc(
                         user.getId(), taskDate);
     }
+
+
+    @Transactional(readOnly = true)
+    public List<DailyTask> getTaskHistoryRange(
+            String userEmail,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        return dailyTaskRepository
+                .findByHabitUserIdAndTaskDateBetween(
+                        user.getId(),
+                        startDate,
+                        endDate);
+    }
+
 }

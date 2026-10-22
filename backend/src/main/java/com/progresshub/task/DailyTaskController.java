@@ -1,14 +1,14 @@
 
 package com.progresshub.task;
 
-import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.web.bind.annotation.RequestParam;
-import java.time.LocalDate;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @RestController
@@ -48,7 +48,6 @@ public class DailyTaskController {
         return DailyTaskResponse.from(task);
     }
 
-
     @GetMapping("/history")
     public List<DailyTaskResponse> getTaskHistory(
             Authentication authentication,
@@ -59,6 +58,37 @@ public class DailyTaskController {
         String userEmail = authentication.getName();
 
         return dailyTaskService.getTaskHistory(userEmail, date)
+                .stream()
+                .map(DailyTaskResponse::from)
+                .toList();
+    }
+
+    @GetMapping("/history/range")
+    public List<DailyTaskResponse> getTaskHistoryRange(
+            Authentication authentication,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate) {
+
+        if (startDate.isAfter(endDate)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Start date must be on or before end date");
+        }
+
+        if (ChronoUnit.DAYS.between(startDate, endDate) > 6) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Date range cannot exceed 7 days");
+        }
+
+        return dailyTaskService.getTaskHistoryRange(
+                        authentication.getName(),
+                        startDate,
+                        endDate)
                 .stream()
                 .map(DailyTaskResponse::from)
                 .toList();

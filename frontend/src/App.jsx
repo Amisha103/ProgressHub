@@ -15,6 +15,7 @@ import Dashboard from './pages/Dashboard'
 import MyHabits from './pages/MyHabits'
 import History from './pages/History'
 import Analytics from './pages/Analytics'
+import Categories from './pages/Categories'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import authService from './services/authService'
@@ -27,8 +28,6 @@ function SessionInitializer({ children }) {
 
     async function restoreSession() {
       try {
-        // Refresh even if an access token exists, so returning users
-        // receive a fresh access token and a rotated refresh cookie.
         await authService.refresh()
       } catch {
         // No valid refresh session: the user must sign in.
@@ -93,6 +92,7 @@ function AppRoutes() {
           <Route path="habits" element={<MyHabits />} />
           <Route path="history" element={<History />} />
           <Route path="analytics" element={<Analytics />} />
+          <Route path="categories" element={<Categories />} />
         </Route>
       </Route>
 

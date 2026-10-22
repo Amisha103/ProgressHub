@@ -1,12 +1,11 @@
-
-const API_BASE_URL = 'http://localhost:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function saveAuthData(data) {
   if (!data?.token || !data?.id) {
-    throw new Error('The server returned an invalid authentication response.')
+    throw new Error('The server returned an invalid authentication response.');
   }
 
-  localStorage.setItem('progresshub-token', data.token)
+  localStorage.setItem('progresshub-token', data.token);
   localStorage.setItem(
     'progresshub-user',
     JSON.stringify({
@@ -14,9 +13,9 @@ function saveAuthData(data) {
       name: data.name,
       email: data.email,
     }),
-  )
+  );
 
-  return data
+  return data;
 }
 
 async function postAuth(endpoint, payload) {
@@ -25,18 +24,19 @@ async function postAuth(endpoint, payload) {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     ...(payload ? { body: JSON.stringify(payload) } : {}),
-  })
+  });
 
-  const data = await response.json().catch(() => ({}))
+  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     throw new Error(
-      data.message || data.detail ||
+      data.message ||
+      data.detail ||
       'Unable to complete your request. Please try again.',
-    )
+    );
   }
 
-  return data
+  return data;
 }
 
 const authService = {
@@ -45,9 +45,9 @@ const authService = {
       email: email.trim(),
       password,
       rememberMe,
-    })
+    });
 
-    return saveAuthData(data)
+    return saveAuthData(data);
   },
 
   async register(name, email, password, rememberMe = false) {
@@ -56,47 +56,47 @@ const authService = {
       email: email.trim(),
       password,
       rememberMe,
-    })
+    });
 
-    return saveAuthData(data)
+    return saveAuthData(data);
   },
 
   async refresh() {
     try {
-      const data = await postAuth('refresh')
-      return saveAuthData(data)
+      const data = await postAuth('refresh');
+      return saveAuthData(data);
     } catch (error) {
-      localStorage.removeItem('progresshub-token')
-      localStorage.removeItem('progresshub-user')
-      throw error
+      localStorage.removeItem('progresshub-token');
+      localStorage.removeItem('progresshub-user');
+      throw error;
     }
   },
 
   async logout() {
     try {
-      await postAuth('logout')
+      await postAuth('logout');
     } finally {
-      localStorage.removeItem('progresshub-token')
-      localStorage.removeItem('progresshub-user')
+      localStorage.removeItem('progresshub-token');
+      localStorage.removeItem('progresshub-user');
     }
   },
 
   getUser() {
     try {
-      const user = localStorage.getItem('progresshub-user')
-      return user ? JSON.parse(user) : null
+      const user = localStorage.getItem('progresshub-user');
+      return user ? JSON.parse(user) : null;
     } catch {
-      return null
+      return null;
     }
   },
 
   isLoggedIn() {
-    return Boolean(localStorage.getItem('progresshub-token'))
+    return Boolean(localStorage.getItem('progresshub-token'));
   },
 
   getToken() {
-    return localStorage.getItem('progresshub-token')
+    return localStorage.getItem('progresshub-token');
   },
-}
+};
 
-export default authService
+export default authService;

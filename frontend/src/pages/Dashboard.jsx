@@ -2,6 +2,7 @@
 import Card from '../components/ui/Card'
 import HabitList from '../components/habits/HabitList'
 import { useSharedHabits } from '../context/HabitsContext'
+import WeeklyAnalytics from '../components/dashboard/WeeklyAnalytics'
 
 export default function Dashboard() {
   const {
@@ -91,7 +92,7 @@ export default function Dashboard() {
           </div>
         </Card>
       </section>
-
+      <WeeklyAnalytics /> 
       <section className="space-y-4">
         <div>
           <h2 className="text-lg font-bold text-slate-800">

@@ -8,16 +8,17 @@ import { useSharedHabits } from '../context/HabitsContext'
 import habitService from '../services/habitService'
 
 export default function MyHabits() {
-  const {
-    habits,
-    completedIds,
-    addHabit,
-    deleteHabit,
-    toggleHabit,
-    loading,
-    error,
-    loadHabits,
-  } = useSharedHabits()
+const {
+  habits,
+  completedIds,
+  streaks,
+  addHabit,
+  deleteHabit,
+  toggleHabit,
+  loading,
+  error,
+  loadHabits,
+} = useSharedHabits()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [formError, setFormError] = useState('')
@@ -114,6 +115,7 @@ export default function MyHabits() {
         <HabitList
           habits={habits}
           completedIds={completedIds}
+            streaks={streaks}
           onToggle={toggleHabit}
           onDelete={handleDeleteHabit}
         />

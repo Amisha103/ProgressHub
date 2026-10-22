@@ -5,6 +5,7 @@ import EmptyState from '../ui/EmptyState'
 export default function HabitList({
   habits = [],
   completedIds = [],
+  streaks = {},
   onToggle,
   onDelete,
 }) {
@@ -25,6 +26,7 @@ export default function HabitList({
           key={habit.id}
           habit={habit}
           isCompleted={completedIds.includes(habit.id)}
+          streak={streaks[habit.id]}
           onToggle={() => onToggle(habit.id)}
           onDelete={() => onDelete(habit.id)}
         />

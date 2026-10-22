@@ -5,6 +5,7 @@ import Card from '../ui/Card'
 export default function HabitCard({
   habit,
   isCompleted = false,
+  streak = null,
   onToggle,
   onDelete,
 }) {
@@ -44,6 +45,18 @@ export default function HabitCard({
             <p className="mt-2 text-xs text-slate-400">
               ⏰ {habit.time}
             </p>
+          )}
+
+          {streak && (
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              <span className="font-medium text-orange-600">
+                🔥 {streak.currentStreak} day streak
+              </span>
+
+              <span className="text-slate-500">
+                🏆 Best: {streak.longestStreak} days
+              </span>
+            </div>
           )}
         </div>
       </div>

@@ -6,6 +6,7 @@ import authService from '../../services/authService'
 const navigation = [
   { label: 'Dashboard', path: '/', icon: '⌂' },
   { label: 'My Habits', path: '/habits', icon: '✓' },
+  { label: 'Categories', path: '/categories', icon: '✦' },
   { label: 'History', path: '/history', icon: '◷' },
   { label: 'Analytics', path: '/analytics', icon: '▥' },
 ]

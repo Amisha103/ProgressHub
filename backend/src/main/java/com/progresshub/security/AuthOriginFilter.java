@@ -40,6 +40,15 @@ public class AuthOriginFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         String path = request.getRequestURI();
+        System.out.println(
+                "AUTH ORIGIN FILTER REACHED: "
+                        + request.getMethod()
+                        + " "
+                        + path
+                        + " Origin=["
+                        + request.getHeader("Origin")
+                        + "]"
+        );
 
         boolean cookieAuthEndpoint =
                 path.equals("/api/auth/refresh")

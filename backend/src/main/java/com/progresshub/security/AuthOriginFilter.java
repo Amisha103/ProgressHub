@@ -24,7 +24,7 @@ public class AuthOriginFilter extends OncePerRequestFilter {
     ) {
         this.allowedOrigins = new HashSet<>();
 
-        this.allowedOrigins.add(frontendOrigin);
+        this.allowedOrigins.add(frontendOrigin.trim());
         this.allowedOrigins.add(
                 "https://progresshub-frontend-one.vercel.app"
         );
@@ -50,7 +50,7 @@ public class AuthOriginFilter extends OncePerRequestFilter {
 
             String origin = request.getHeader("Origin");
 
-            if (origin == null || !allowedOrigins.contains(origin)) {
+            if (origin == null || !allowedOrigins.contains(origin.trim())) {
                 response.sendError(
                         HttpServletResponse.SC_FORBIDDEN,
                         "Request origin is not allowed"

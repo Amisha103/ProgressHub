@@ -51,6 +51,11 @@ public class AuthOriginFilter extends OncePerRequestFilter {
             String origin = request.getHeader("Origin");
 
             if (origin == null || !allowedOrigins.contains(origin.trim())) {
+                System.out.println("AUTH ORIGIN FILTER REJECTED REQUEST");
+                System.out.println("Request path: " + path);
+                System.out.println("Received origin: [" + origin + "]");
+                System.out.println("Allowed origins: " + allowedOrigins);
+
                 response.sendError(
                         HttpServletResponse.SC_FORBIDDEN,
                         "Request origin is not allowed"

@@ -42,6 +42,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/auth/login",
@@ -69,16 +70,20 @@ public class SecurityConfig {
 
         configuration.setAllowedOrigins(
                 List.of(
+                        "https://progresshub-frontend-one.vercel.app",
                         "http://localhost:5173",
                         "http://localhost:5174"
                 )
         );
+
         configuration.setAllowedMethods(
                 List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         );
+
         configuration.setAllowedHeaders(
                 List.of("Authorization", "Content-Type")
         );
+
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

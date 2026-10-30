@@ -23,7 +23,11 @@ public class AuthOriginFilter extends OncePerRequestFilter {
             String frontendOrigin
     ) {
         this.allowedOrigins = new HashSet<>();
+
         this.allowedOrigins.add(frontendOrigin);
+        this.allowedOrigins.add(
+                "https://progresshub-frontend-one.vercel.app"
+        );
         this.allowedOrigins.add("http://localhost:5173");
         this.allowedOrigins.add("http://localhost:5174");
     }

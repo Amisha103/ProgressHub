@@ -31,13 +31,6 @@ export default function HabitForm({ onSubmit, onCancel }) {
 
         if (!cancelled) {
           setCategories(data)
-
-          if (data.length > 0) {
-            setForm((current) => ({
-              ...current,
-              categoryId: current.categoryId || String(data[0].id),
-            }))
-          }
         }
       } catch (error) {
         if (!cancelled) {
@@ -69,7 +62,7 @@ export default function HabitForm({ onSubmit, onCancel }) {
   async function handleSubmit(event) {
     event.preventDefault()
 
-    if (!form.name.trim() || !form.categoryId || submitting) {
+    if (!form.name.trim() || submitting) {
       return
     }
 
@@ -79,17 +72,16 @@ export default function HabitForm({ onSubmit, onCancel }) {
 
       await onSubmit({
         name: form.name.trim(),
-        categoryId: Number(form.categoryId),
+        categoryId: form.categoryId
+          ? Number(form.categoryId)
+          : null,
         icon: form.icon.trim() || '✨',
         color: form.color.trim() || 'bg-indigo-100',
         reminderTime: form.reminderTime || null,
         resetTime: form.resetTime || null,
       })
 
-      setForm({
-        ...initialForm,
-        categoryId: categories.length ? String(categories[0].id) : '',
-      })
+      setForm(initialForm)
     } catch (error) {
       setCategoryError(error.message || 'Unable to save the habit.')
     } finally {
@@ -103,6 +95,7 @@ export default function HabitForm({ onSubmit, onCancel }) {
         <label className="mb-1 block text-sm font-medium text-slate-700">
           Habit name *
         </label>
+
         <input
           name="name"
           value={form.name}
@@ -116,28 +109,30 @@ export default function HabitForm({ onSubmit, onCancel }) {
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">
-          Category *
+          Category (optional)
         </label>
+
         <select
           name="categoryId"
           value={form.categoryId}
           onChange={handleChange}
           disabled={loadingCategories || categories.length === 0}
-          required
           className="w-full rounded-xl border border-slate-200 px-3 py-2.5 outline-none focus:border-indigo-500 disabled:bg-slate-50"
         >
           <option value="">
-            {loadingCategories ? 'Loading categories...' : 'Select a category'}
+            {loadingCategories ? 'Loading categories...' : 'No category'}
           </option>
+
           {categories.map((category) => (
             <option key={category.id} value={String(category.id)}>
               {category.name}
             </option>
           ))}
         </select>
-        {!loadingCategories && categories.length === 0 && !categoryError && (
+
+        {!loadingCategories && categories.length === 0 && (
           <p className="mt-1 text-xs text-slate-500">
-            Create a category before adding a habit.
+            You can create a habit without assigning a category.
           </p>
         )}
       </div>
@@ -146,6 +141,7 @@ export default function HabitForm({ onSubmit, onCancel }) {
         <label className="mb-1 block text-sm font-medium text-slate-700">
           Reminder time
         </label>
+
         <input
           type="time"
           name="reminderTime"
@@ -159,6 +155,7 @@ export default function HabitForm({ onSubmit, onCancel }) {
         <label className="mb-1 block text-sm font-medium text-slate-700">
           Reset time
         </label>
+
         <input
           type="time"
           name="resetTime"
@@ -172,6 +169,7 @@ export default function HabitForm({ onSubmit, onCancel }) {
         <label className="mb-1 block text-sm font-medium text-slate-700">
           Icon (emoji)
         </label>
+
         <input
           name="icon"
           value={form.icon}
@@ -185,6 +183,7 @@ export default function HabitForm({ onSubmit, onCancel }) {
         <label className="mb-1 block text-sm font-medium text-slate-700">
           Color
         </label>
+
         <select
           name="color"
           value={form.color}
@@ -212,14 +211,8 @@ export default function HabitForm({ onSubmit, onCancel }) {
             Cancel
           </Button>
         )}
-        <Button
-          type="submit"
-          disabled={
-            submitting ||
-            loadingCategories ||
-            categories.length === 0
-          }
-        >
+
+        <Button type="submit" disabled={submitting}>
           {submitting ? 'Saving...' : 'Add Habit'}
         </Button>
       </div>

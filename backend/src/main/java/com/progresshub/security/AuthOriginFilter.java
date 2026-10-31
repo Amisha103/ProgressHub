@@ -74,7 +74,6 @@ public class AuthOriginFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
-        filterChain.doFilter(request, response);
 
         if (path.equals("/api/auth/refresh")) {
             System.out.println(
@@ -82,5 +81,6 @@ public class AuthOriginFilter extends OncePerRequestFilter {
                             + response.getStatus()
             );
         }
+
     }
 }

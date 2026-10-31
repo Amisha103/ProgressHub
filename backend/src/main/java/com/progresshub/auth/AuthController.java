@@ -179,7 +179,7 @@ public class AuthController {
                 .from(REFRESH_COOKIE_NAME, token)
                 .httpOnly(true)
                 .secure(cookieSecure)
-                .sameSite("Lax")
+                .sameSite("None")
                 .path("/api/auth")
                 .maxAge(maxAge.isNegative() ? Duration.ZERO : maxAge)
                 .build();

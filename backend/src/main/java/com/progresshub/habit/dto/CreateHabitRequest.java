@@ -1,5 +1,5 @@
 package com.progresshub.habit.dto;
-import jakarta.validation.constraints.NotNull;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -11,7 +11,6 @@ public class CreateHabitRequest {
     @Size(max = 150)
     private String name;
 
-    @NotNull
     private Long categoryId;
 
     @Size(max = 50)
@@ -33,6 +32,14 @@ public class CreateHabitRequest {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
     }
 
     public String getIcon() {
@@ -65,12 +72,5 @@ public class CreateHabitRequest {
 
     public void setResetTime(LocalTime resetTime) {
         this.resetTime = resetTime;
-    }
-    public Long getCategoryId() {
-        return categoryId;
-    }
-
-    public void setCategoryId(Long categoryId) {
-        this.categoryId = categoryId;
     }
 }

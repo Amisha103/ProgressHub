@@ -8,6 +8,8 @@ import com.progresshub.user.UserRepository;
 import com.progresshub.habit.dto.CreateHabitRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class HabitService {
 
@@ -38,13 +40,17 @@ public class HabitService {
                 .orElseThrow(() ->
                         new RuntimeException("Habit not found"));
 
-        Category category = categoryRepository
-                .findByIdAndUserId(
-                        request.getCategoryId(),
-                        user.getId())
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Category not found for this user"));
+        Category category = null;
+
+        if (request.getCategoryId() != null) {
+            category = categoryRepository
+                    .findByIdAndUserId(
+                            request.getCategoryId(),
+                            user.getId())
+                    .orElseThrow(() ->
+                            new RuntimeException(
+                                    "Category not found for this user"));
+        }
 
         habit.setCategory(category);
         habit.setName(request.getName());
@@ -56,10 +62,11 @@ public class HabitService {
         return habitRepository.save(habit);
     }
 
-    public java.util.List<Habit> getHabits(String userEmail) {
+    public List<Habit> getHabits(String userEmail) {
 
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
 
         return habitRepository.findByUserIdAndStatus(
                 user.getId(),
@@ -71,21 +78,22 @@ public class HabitService {
             String userEmail,
             CreateHabitRequest request) {
 
-        // Find the logged-in user.
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() ->
                         new RuntimeException("User not found"));
 
-        // Find a category owned by this user.
-        Category category = categoryRepository
-                .findByIdAndUserId(
-                        request.getCategoryId(),
-                        user.getId())
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Category not found for this user"));
+        Category category = null;
 
-        // Create the habit.
+        if (request.getCategoryId() != null) {
+            category = categoryRepository
+                    .findByIdAndUserId(
+                            request.getCategoryId(),
+                            user.getId())
+                    .orElseThrow(() ->
+                            new RuntimeException(
+                                    "Category not found for this user"));
+        }
+
         Habit habit = new Habit();
         habit.setUser(user);
         habit.setCategory(category);
@@ -96,7 +104,6 @@ public class HabitService {
         habit.setResetTime(request.getResetTime());
         habit.setStatus(HabitStatus.ACTIVE);
 
-        // Save the habit in the database.
         return habitRepository.save(habit);
     }
 
@@ -115,5 +122,4 @@ public class HabitService {
 
         return habitRepository.save(habit);
     }
-
 }

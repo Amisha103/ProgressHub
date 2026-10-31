@@ -1,3 +1,4 @@
+
 package com.progresshub.habit;
 
 import com.progresshub.category.Category;
@@ -25,8 +26,8 @@ public class Habit {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "category_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "category_id", nullable = true)
     private Category category;
 
     @Column(nullable = false, length = 150)

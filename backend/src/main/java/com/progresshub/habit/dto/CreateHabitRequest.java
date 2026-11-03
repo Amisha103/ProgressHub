@@ -1,9 +1,12 @@
+
 package com.progresshub.habit.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.util.Set;
 
 public class CreateHabitRequest {
 
@@ -22,6 +25,8 @@ public class CreateHabitRequest {
     private LocalTime reminderTime;
 
     private LocalTime resetTime;
+
+    private Set<DayOfWeek> scheduledDays;
 
     public CreateHabitRequest() {
     }
@@ -72,5 +77,13 @@ public class CreateHabitRequest {
 
     public void setResetTime(LocalTime resetTime) {
         this.resetTime = resetTime;
+    }
+
+    public Set<DayOfWeek> getScheduledDays() {
+        return scheduledDays;
+    }
+
+    public void setScheduledDays(Set<DayOfWeek> scheduledDays) {
+        this.scheduledDays = scheduledDays;
     }
 }

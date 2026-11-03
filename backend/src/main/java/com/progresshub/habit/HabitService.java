@@ -8,6 +8,7 @@ import com.progresshub.user.UserRepository;
 import com.progresshub.habit.dto.CreateHabitRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
 
 @Service
@@ -59,6 +60,12 @@ public class HabitService {
         habit.setReminderTime(request.getReminderTime());
         habit.setResetTime(request.getResetTime());
 
+        habit.setScheduledDays(
+                request.getScheduledDays() != null
+                        ? new HashSet<>(request.getScheduledDays())
+                        : new HashSet<>()
+        );
+
         return habitRepository.save(habit);
     }
 
@@ -70,8 +77,7 @@ public class HabitService {
 
         return habitRepository.findByUserIdAndStatus(
                 user.getId(),
-                HabitStatus.ACTIVE
-        );
+                HabitStatus.ACTIVE);
     }
 
     public Habit createHabit(
@@ -104,6 +110,12 @@ public class HabitService {
         habit.setResetTime(request.getResetTime());
         habit.setStatus(HabitStatus.ACTIVE);
 
+        habit.setScheduledDays(
+                request.getScheduledDays() != null
+                        ? new HashSet<>(request.getScheduledDays())
+                        : new HashSet<>()
+        );
+
         return habitRepository.save(habit);
     }
 
@@ -123,3 +135,4 @@ public class HabitService {
         return habitRepository.save(habit);
     }
 }
+

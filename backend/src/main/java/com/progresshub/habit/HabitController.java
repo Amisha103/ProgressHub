@@ -2,14 +2,15 @@
 package com.progresshub.habit;
 
 import com.progresshub.habit.dto.CreateHabitRequest;
-import jakarta.validation.Valid;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-import java.util.List;
 import com.progresshub.user.User;
 import com.progresshub.user.UserRepository;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/habits")
@@ -37,23 +38,9 @@ public class HabitController {
         List<Habit> habits = habitService.getHabits(userEmail);
 
         return habits.stream()
-                .map(habit -> new HabitResponse(
-                        habit.getId(),
-                        habit.getCategory().getId(),
-                        habit.getCategory().getName(),
-                        habit.getName(),
-                        habit.getIcon(),
-                        habit.getColor(),
-                        habit.getReminderTime(),
-                        habit.getResetTime(),
-                        habit.getStatus(),
-                        habit.getCreatedAt(),
-                        habit.getUpdatedAt()
-                ))
+                .map(this::toHabitResponse)
                 .toList();
     }
-
-
 
     @PutMapping("/{id}")
     public HabitResponse updateHabit(
@@ -66,19 +53,7 @@ public class HabitController {
         Habit habit = habitService.updateHabit(
                 userEmail, id, request);
 
-        return new HabitResponse(
-                habit.getId(),
-                habit.getCategory().getId(),
-                habit.getCategory().getName(),
-                habit.getName(),
-                habit.getIcon(),
-                habit.getColor(),
-                habit.getReminderTime(),
-                habit.getResetTime(),
-                habit.getStatus(),
-                habit.getCreatedAt(),
-                habit.getUpdatedAt()
-        );
+        return toHabitResponse(habit);
     }
 
     @PostMapping
@@ -90,19 +65,7 @@ public class HabitController {
 
         Habit habit = habitService.createHabit(userEmail, request);
 
-        return new HabitResponse(
-                habit.getId(),
-                habit.getCategory().getId(),
-                habit.getCategory().getName(),
-                habit.getName(),
-                habit.getIcon(),
-                habit.getColor(),
-                habit.getReminderTime(),
-                habit.getResetTime(),
-                habit.getStatus(),
-                habit.getCreatedAt(),
-                habit.getUpdatedAt()
-        );
+        return toHabitResponse(habit);
     }
 
     @PatchMapping("/{id}/archive")
@@ -114,20 +77,9 @@ public class HabitController {
 
         Habit habit = habitService.archiveHabit(userEmail, id);
 
-        return new HabitResponse(
-                habit.getId(),
-                habit.getCategory().getId(),
-                habit.getCategory().getName(),
-                habit.getName(),
-                habit.getIcon(),
-                habit.getColor(),
-                habit.getReminderTime(),
-                habit.getResetTime(),
-                habit.getStatus(),
-                habit.getCreatedAt(),
-                habit.getUpdatedAt()
-        );
+        return toHabitResponse(habit);
     }
+
     @GetMapping("/{id}/streak")
     public HabitStreakResponse getHabitStreak(
             Authentication authentication,
@@ -140,5 +92,29 @@ public class HabitController {
         return habitStreakService.getStreak(user.getId(), habitId);
     }
 
-}
+    private HabitResponse toHabitResponse(Habit habit) {
 
+        Long categoryId = habit.getCategory() != null
+                ? habit.getCategory().getId()
+                : null;
+
+        String categoryName = habit.getCategory() != null
+                ? habit.getCategory().getName()
+                : null;
+
+        return new HabitResponse(
+                habit.getId(),
+                categoryId,
+                categoryName,
+                habit.getName(),
+                habit.getIcon(),
+                habit.getColor(),
+                habit.getReminderTime(),
+                habit.getResetTime(),
+                habit.getScheduledDays(),
+                habit.getStatus(),
+                habit.getCreatedAt(),
+                habit.getUpdatedAt()
+        );
+    }
+}

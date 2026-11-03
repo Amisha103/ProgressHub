@@ -8,8 +8,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "habits")
@@ -44,6 +47,16 @@ public class Habit {
 
     @Column(name = "reset_time")
     private LocalTime resetTime;
+
+    // Weekly schedule
+    @ElementCollection
+    @CollectionTable(
+            name = "habit_days",
+            joinColumns = @JoinColumn(name = "habit_id")
+    )
+    @Enumerated(EnumType.STRING)
+    @Column(name = "day_of_week", nullable = false, length = 10)
+    private Set<DayOfWeek> scheduledDays = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

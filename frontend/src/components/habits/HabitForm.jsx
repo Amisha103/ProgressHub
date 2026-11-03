@@ -10,7 +10,18 @@ const initialForm = {
   resetTime: '',
   icon: '✨',
   color: 'bg-indigo-100',
+  scheduledDays: [],
 }
+
+const weekdays = [
+  { label: 'Mon', value: 'MONDAY' },
+  { label: 'Tue', value: 'TUESDAY' },
+  { label: 'Wed', value: 'WEDNESDAY' },
+  { label: 'Thu', value: 'THURSDAY' },
+  { label: 'Fri', value: 'FRIDAY' },
+  { label: 'Sat', value: 'SATURDAY' },
+  { label: 'Sun', value: 'SUNDAY' },
+]
 
 export default function HabitForm({ onSubmit, onCancel }) {
   const [form, setForm] = useState(initialForm)
@@ -59,6 +70,15 @@ export default function HabitForm({ onSubmit, onCancel }) {
     }))
   }
 
+  function toggleDay(day) {
+    setForm((current) => ({
+      ...current,
+      scheduledDays: current.scheduledDays.includes(day)
+        ? current.scheduledDays.filter((selectedDay) => selectedDay !== day)
+        : [...current.scheduledDays, day],
+    }))
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
 
@@ -79,6 +99,7 @@ export default function HabitForm({ onSubmit, onCancel }) {
         color: form.color.trim() || 'bg-indigo-100',
         reminderTime: form.reminderTime || null,
         resetTime: form.resetTime || null,
+        scheduledDays: form.scheduledDays,
       })
 
       setForm(initialForm)
@@ -135,6 +156,39 @@ export default function HabitForm({ onSubmit, onCancel }) {
             You can create a habit without assigning a category.
           </p>
         )}
+      </div>
+
+      <div>
+        <label className="mb-2 block text-sm font-medium text-slate-700">
+          Repeat on
+        </label>
+
+        <div className="grid grid-cols-7 gap-1.5">
+          {weekdays.map((day) => {
+            const selected = form.scheduledDays.includes(day.value)
+
+            return (
+              <button
+                key={day.value}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => toggleDay(day.value)}
+                className={`rounded-lg border px-1 py-2 text-xs font-medium transition ${
+                  selected
+                    ? 'border-indigo-600 bg-indigo-600 text-white'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300'
+                }`}
+              >
+                {day.label}
+              </button>
+            )
+          })}
+        </div>
+
+        <p className="mt-2 text-xs text-slate-500">
+          Select the days you want to perform this habit. Leave all unselected
+          for no specific weekly schedule.
+        </p>
       </div>
 
       <div>

@@ -2,6 +2,16 @@
 import Button from '../ui/Button'
 import Card from '../ui/Card'
 
+const weekdays = [
+  { label: 'Mon', value: 'MONDAY' },
+  { label: 'Tue', value: 'TUESDAY' },
+  { label: 'Wed', value: 'WEDNESDAY' },
+  { label: 'Thu', value: 'THURSDAY' },
+  { label: 'Fri', value: 'FRIDAY' },
+  { label: 'Sat', value: 'SATURDAY' },
+  { label: 'Sun', value: 'SUNDAY' },
+]
+
 export default function HabitCard({
   habit,
   isCompleted = false,
@@ -9,6 +19,8 @@ export default function HabitCard({
   onToggle,
   onDelete,
 }) {
+  const scheduledDays = habit.scheduledDays || []
+
   return (
     <Card className="transition hover:shadow-md">
       <div className="flex items-start gap-4">
@@ -46,6 +58,37 @@ export default function HabitCard({
               ⏰ {habit.time}
             </p>
           )}
+
+          <div className="mt-3">
+            <p className="mb-2 text-xs font-medium text-slate-500">
+              Weekly schedule
+            </p>
+
+            <div className="flex flex-wrap gap-1.5">
+              {weekdays.map((day) => {
+                const isScheduled = scheduledDays.includes(day.value)
+
+                return (
+                  <span
+                    key={day.value}
+                    className={`rounded-lg px-2 py-1 text-xs font-medium ${
+                      isScheduled
+                        ? 'bg-indigo-100 text-indigo-700'
+                        : 'bg-slate-100 text-slate-400'
+                    }`}
+                  >
+                    {day.label}
+                  </span>
+                )
+              })}
+            </div>
+
+            {scheduledDays.length === 0 && (
+              <p className="mt-1 text-xs text-slate-400">
+                No specific days selected
+              </p>
+            )}
+          </div>
 
           {streak && (
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">

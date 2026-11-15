@@ -21,6 +21,7 @@ public class GoogleCalendarController {
 
     private final GoogleCalendarOAuthService oauthService;
     private final GoogleCalendarCallbackService callbackService;
+    private final GoogleCalendarConnectionRepository connectionRepository;
     private final UserRepository userRepository;
 
     @Value("${google.redirect-uri}")
@@ -32,13 +33,16 @@ public class GoogleCalendarController {
     public GoogleCalendarController(
             GoogleCalendarOAuthService oauthService,
             GoogleCalendarCallbackService callbackService,
+            GoogleCalendarConnectionRepository connectionRepository,
             UserRepository userRepository
     ) {
         this.oauthService = oauthService;
         this.callbackService = callbackService;
+        this.connectionRepository = connectionRepository;
         this.userRepository = userRepository;
     }
 
+    // Start Google Calendar connection
     @PostMapping("/connect")
     public ResponseEntity<Map<String, String>> connect(
             Authentication authentication
@@ -69,6 +73,7 @@ public class GoogleCalendarController {
                 .body(Map.of("authorizationUrl", authorizationUrl));
     }
 
+    // Google OAuth callback
     @GetMapping("/oauth/callback")
     public ResponseEntity<Void> callback(
             @RequestParam(required = false) String code,
@@ -112,8 +117,28 @@ public class GoogleCalendarController {
         }
 
         return ResponseEntity.status(HttpStatus.FOUND)
-                .header(HttpHeaders.LOCATION, URI.create(destination).toString())
+                .header(
+                        HttpHeaders.LOCATION,
+                        URI.create(destination).toString()
+                )
                 .header(HttpHeaders.SET_COOKIE, clearCookie.toString())
                 .build();
+    }
+
+    // Check Google Calendar connection status
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Boolean>> getConnectionStatus(
+            Authentication authentication
+    ) {
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() ->
+                        new IllegalStateException("User not found"));
+
+        boolean connected =
+                connectionRepository.existsByUserId(user.getId());
+
+        return ResponseEntity.ok(
+                Map.of("connected", connected)
+        );
     }
 }

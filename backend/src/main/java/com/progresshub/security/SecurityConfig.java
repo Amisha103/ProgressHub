@@ -14,6 +14,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+
 import java.util.List;
 
 @Configuration
@@ -42,7 +43,12 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.OPTIONS,
+                                "/**"
+                        ).permitAll()
+
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/auth/login",
@@ -51,6 +57,19 @@ public class SecurityConfig {
                                 "/api/auth/refresh",
                                 "/api/auth/logout"
                         ).permitAll()
+
+                        // Google Calendar OAuth callback
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/calendar/oauth/callback"
+                        ).permitAll()
+
+                        // Google Calendar connection requires login
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/calendar/connect"
+                        ).authenticated()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
@@ -67,6 +86,7 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(
@@ -78,11 +98,21 @@ public class SecurityConfig {
         );
 
         configuration.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                List.of(
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "PATCH",
+                        "DELETE",
+                        "OPTIONS"
+                )
         );
 
         configuration.setAllowedHeaders(
-                List.of("Authorization", "Content-Type")
+                List.of(
+                        "Authorization",
+                        "Content-Type"
+                )
         );
 
         configuration.setAllowCredentials(true);
@@ -100,10 +130,11 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
     @Bean
-    public FilterRegistrationBean<AuthOriginFilter> authOriginFilterRegistration(
-            AuthOriginFilter filter
-    ) {
+    public FilterRegistrationBean<AuthOriginFilter>
+    authOriginFilterRegistration(AuthOriginFilter filter) {
+
         FilterRegistrationBean<AuthOriginFilter> registration =
                 new FilterRegistrationBean<>(filter);
 

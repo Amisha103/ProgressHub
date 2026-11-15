@@ -9,6 +9,7 @@ const navigation = [
   { label: 'Categories', path: '/categories', icon: '✦' },
   { label: 'History', path: '/history', icon: '◷' },
   { label: 'Analytics', path: '/analytics', icon: '▥' },
+    { label: 'Settings', path: '/settings', icon: '⚙' },
 ]
 
 export default function Sidebar({ onNavigate }) {

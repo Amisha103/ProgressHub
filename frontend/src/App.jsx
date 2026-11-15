@@ -19,6 +19,7 @@ import Categories from './pages/Categories'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import authService from './services/authService'
+import Settings from './pages/Settings'
 
 function SessionInitializer({ children }) {
   const [ready, setReady] = useState(false)
@@ -93,6 +94,7 @@ function AppRoutes() {
           <Route path="history" element={<History />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="categories" element={<Categories />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Route>
 

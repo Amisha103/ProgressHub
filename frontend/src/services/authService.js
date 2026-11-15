@@ -46,10 +46,18 @@ const authService = {
       password,
       rememberMe,
     });
+    
 
     return saveAuthData(data);
   },
+async googleLogin(credential, rememberMe = false) {
+  const data = await postAuth('google', {
+    credential,
+    rememberMe,
+  });
 
+  return saveAuthData(data);
+},
   async register(name, email, password, rememberMe = false) {
     const data = await postAuth('register', {
       name: name.trim(),
@@ -59,6 +67,7 @@ const authService = {
     });
 
     return saveAuthData(data);
+    
   },
 
   async refresh() {

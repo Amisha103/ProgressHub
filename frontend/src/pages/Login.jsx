@@ -1,6 +1,7 @@
 
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { GoogleLogin } from '@react-oauth/google'
 import authService from '../services/authService'
 import Button from '../components/ui/Button'
 
@@ -21,11 +22,33 @@ export default function Login() {
 
     try {
       await authService.login(email.trim(), password, rememberMe)
-
       const destination = location.state?.from || '/'
       navigate(destination, { replace: true })
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleGoogleSuccess(credentialResponse) {
+    setError('')
+    setLoading(true)
+
+    try {
+      if (!credentialResponse.credential) {
+        throw new Error('Google did not return an ID token.')
+      }
+
+      await authService.googleLogin(
+        credentialResponse.credential,
+        rememberMe,
+      )
+
+      const destination = location.state?.from || '/'
+      navigate(destination, { replace: true })
+    } catch (err) {
+      setError(err.message || 'Google sign-in failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -112,6 +135,25 @@ export default function Login() {
             {loading ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
+
+        <div className="my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-slate-200" />
+          <span className="text-sm text-slate-400">OR</span>
+          <div className="h-px flex-1 bg-slate-200" />
+        </div>
+
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError('Google sign-in was unsuccessful. Please try again.')}
+            useOneTap={false}
+            theme="outline"
+            size="large"
+            text="continue_with"
+            shape="rectangular"
+            width="320"
+          />
+        </div>
 
         <p className="mt-6 text-center text-sm text-slate-600">
           Don&apos;t have an account?{' '}

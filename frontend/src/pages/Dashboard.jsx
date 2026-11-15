@@ -1,8 +1,10 @@
 
+import { useEffect, useState } from 'react'
 import Card from '../components/ui/Card'
 import HabitList from '../components/habits/HabitList'
 import { useSharedHabits } from '../context/HabitsContext'
 import WeeklyAnalytics from '../components/dashboard/WeeklyAnalytics'
+import calendarService from '../services/calendarService'
 
 export default function Dashboard() {
   const {
@@ -15,6 +17,24 @@ export default function Dashboard() {
     loadHabits,
   } = useSharedHabits()
 
+  const [calendarConnected, setCalendarConnected] = useState(false)
+  const [calendarLoading, setCalendarLoading] = useState(true)
+
+  useEffect(() => {
+    const checkCalendarConnection = async () => {
+      try {
+        const data = await calendarService.getStatus()
+        setCalendarConnected(data.connected)
+      } catch (err) {
+        console.error('Calendar status check failed:', err)
+      } finally {
+        setCalendarLoading(false)
+      }
+    }
+
+    checkCalendarConnection()
+  }, [])
+
   const now = new Date()
 
   const today = now.toLocaleDateString('en-IN', {
@@ -23,12 +43,10 @@ export default function Dashboard() {
     month: 'long',
   })
 
-  // Java DayOfWeek values use uppercase weekday names.
   const todayWeekday = now
     .toLocaleDateString('en-US', { weekday: 'long' })
     .toUpperCase()
 
-  // Show only habits scheduled for the current weekday.
   const todaysHabits = habits.filter((habit) =>
     habit.scheduledDays?.includes(todayWeekday)
   )
@@ -66,6 +84,37 @@ export default function Dashboard() {
           Every small step counts. Keep building your routine.
         </p>
       </section>
+
+      {/* Google Calendar connection status */}
+      <Card>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="font-semibold text-slate-900">
+              Google Calendar
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              {calendarLoading
+                ? 'Checking connection...'
+                : calendarConnected
+                  ? 'Your Google Calendar is connected to ProgressHub.'
+                  : 'Connect Google Calendar to link your account.'}
+            </p>
+          </div>
+
+          {!calendarLoading && (
+            <span
+              className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+                calendarConnected
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-amber-100 text-amber-700'
+              }`}
+            >
+              {calendarConnected ? '✓ Connected' : 'Not connected'}
+            </span>
+          )}
+        </div>
+      </Card>
 
       {error && (
         <div

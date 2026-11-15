@@ -18,12 +18,32 @@ const calendarService = {
 
     if (!response.ok) {
       throw new Error(
-        data.message || data.detail || 'Unable to connect Google Calendar.',
+        data.message || data.detail || 'Unable to connect Google Calendar.'
       );
     }
 
     if (!data.authorizationUrl) {
       throw new Error('Google authorization URL was not returned.');
+    }
+
+    return data;
+  },
+
+  async getStatus() {
+    const token = localStorage.getItem('progresshub-token');
+
+    const response = await fetch(`${API_BASE_URL}/calendar/status`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error('Unable to check Google Calendar connection status.');
     }
 
     return data;

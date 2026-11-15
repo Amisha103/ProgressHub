@@ -1,75 +1,93 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import calendarService from '../services/calendarService';
 
 export default function Settings() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false);
+  const [connected, setConnected] = useState(false);
   const [error, setError] = useState('');
 
+  // Check Google Calendar connection when Settings loads
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        setLoading(true);
+        const data = await calendarService.getStatus();
+        setConnected(data.connected);
+      } catch (err) {
+        setError(err.message || 'Unable to check connection.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkConnection();
+  }, []);
+
+  // Connect Google Calendar
   const handleConnectCalendar = async () => {
     try {
-      setLoading(true);
+      setConnecting(true);
       setError('');
 
       const data = await calendarService.connect();
 
-      // Redirect to Google's authorization page
       window.location.assign(data.authorizationUrl);
-
     } catch (err) {
       setError(err.message || 'Unable to connect Google Calendar.');
-      setLoading(false);
+      setConnecting(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">
-          Settings
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Manage your account and connected services.
-        </p>
-      </div>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Settings</h1>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-2xl">
-            📅
-          </div>
+      <div className="max-w-xl rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold mb-2">
+          Google Calendar
+        </h2>
 
-          <div>
-            <h2 className="font-semibold text-slate-900">
-              Google Calendar
-            </h2>
-            <p className="text-sm text-slate-500">
-              Connect your Google Calendar to ProgressHub.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5">
-          <button
-            type="button"
-            onClick={handleConnectCalendar}
-            disabled={loading}
-            className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {loading ? 'Connecting...' : 'Connect Google Calendar'}
-          </button>
-
-          <p className="mt-2 text-xs text-slate-400">
-            Authorize ProgressHub to access your Google Calendar.
+        {loading ? (
+          <p className="text-gray-500">
+            Checking connection status...
           </p>
-
-          {error && (
-            <p className="mt-3 text-sm text-red-600">
-              {error}
+        ) : connected ? (
+          <div>
+            <p className="text-green-600 font-medium mb-4">
+              ✓ Google Calendar is connected!
             </p>
-          )}
-        </div>
-      </section>
+
+            <p className="text-sm text-gray-500">
+              Your Google Calendar account is successfully linked
+              with ProgressHub.
+            </p>
+          </div>
+        ) : (
+          <div>
+            <p className="text-gray-500 mb-4">
+              Google Calendar is not connected.
+            </p>
+
+            <button
+              onClick={handleConnectCalendar}
+              disabled={connecting}
+              className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {connecting
+                ? 'Connecting...'
+                : 'Connect Google Calendar'}
+            </button>
+          </div>
+        )}
+
+        {error && (
+          <p className="text-red-500 mt-4 text-sm">
+            {error}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 
 package com.progresshub.auth;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.progresshub.auth.dto.RegisterRequest;
 import com.progresshub.common.exception.EmailAlreadyExistsException;
 import com.progresshub.common.exception.InvalidCredentialsException;
@@ -20,17 +21,20 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final GoogleTokenVerifier googleTokenVerifier;
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
-            RefreshTokenService refreshTokenService
+            RefreshTokenService refreshTokenService,
+            GoogleTokenVerifier googleTokenVerifier
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
+        this.googleTokenVerifier = googleTokenVerifier;
     }
 
     @Transactional
@@ -45,6 +49,7 @@ public class AuthService {
                 .orElse(null);
 
         if (user == null ||
+                user.getPasswordHash() == null ||
                 !passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new InvalidCredentialsException(
                     "Invalid email or password"
@@ -94,6 +99,46 @@ public class AuthService {
                 );
 
         return new LoginResult(savedUser, accessToken, refreshToken);
+    }
+
+
+    @Transactional
+    public LoginResult googleLogin(
+            String credential,
+            boolean rememberMe
+    ) {
+        GoogleIdToken.Payload payload =
+                googleTokenVerifier.verify(credential);
+
+        String email = payload.getEmail()
+                .trim()
+                .toLowerCase(Locale.ROOT);
+
+        String googleName = (String) payload.get("name");
+
+        final String name = (googleName == null || googleName.isBlank())
+                ? email.substring(0, email.indexOf('@'))
+                : googleName.trim();
+
+        User user = userRepository.findByEmail(email)
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setName(name);
+                    newUser.setEmail(email);
+                    newUser.setPasswordHash(null);
+
+                    return userRepository.saveAndFlush(newUser);
+                });
+
+        String accessToken = jwtService.generateToken(
+                user.getId(),
+                user.getEmail()
+        );
+
+        RefreshTokenService.CreatedRefreshToken refreshToken =
+                refreshTokenService.createSession(user, rememberMe);
+
+        return new LoginResult(user, accessToken, refreshToken);
     }
 
     public record LoginResult(

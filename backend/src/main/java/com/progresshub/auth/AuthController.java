@@ -16,7 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
+import com.progresshub.auth.dto.GoogleLoginRequest;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -198,5 +198,31 @@ public class AuthController {
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    @PostMapping("/google")
+    public LoginResponse googleLogin(
+            @Valid @RequestBody GoogleLoginRequest request,
+            HttpServletResponse response
+    ) {
+        AuthService.LoginResult result = authService.googleLogin(
+                request.credential(),
+                request.rememberMe()
+        );
+
+        setRefreshCookie(
+                response,
+                result.refreshToken().token(),
+                result.refreshToken().expiresAt()
+        );
+
+        User user = result.user();
+
+        return new LoginResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                result.token()
+        );
     }
 }

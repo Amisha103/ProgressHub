@@ -20,6 +20,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import authService from './services/authService'
 import Settings from './pages/Settings'
+import Steppie from './pages/Steppie'
 
 function SessionInitializer({ children }) {
   const [ready, setReady] = useState(false)
@@ -95,6 +96,7 @@ function AppRoutes() {
           <Route path="analytics" element={<Analytics />} />
           <Route path="categories" element={<Categories />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="steppie" element={<Steppie />} />
         </Route>
       </Route>
 

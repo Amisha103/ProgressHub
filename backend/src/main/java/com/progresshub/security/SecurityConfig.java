@@ -80,7 +80,7 @@ public class SecurityConfig {
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
                 );
-
+        System.out.println("CUSTOM SECURITY CONFIGURATION LOADED");
         return http.build();
     }
 

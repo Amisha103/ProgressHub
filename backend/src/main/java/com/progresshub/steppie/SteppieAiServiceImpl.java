@@ -22,7 +22,7 @@ public class SteppieAiServiceImpl implements SteppieAiService {
     private final ObjectMapper objectMapper;
 
     public SteppieAiServiceImpl(
-            @Value("${GEMINI_API_KEY:}") String apiKey,
+            @Value("${gemini.api-key:}") String apiKey,
             ObjectMapper objectMapper) {
         this.apiKey = apiKey;
         this.objectMapper = objectMapper;

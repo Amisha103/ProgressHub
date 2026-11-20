@@ -11,9 +11,14 @@ import java.util.List;
 public class SteppieController {
 
     private final SteppieRoadmapService roadmapService;
+    private final SteppieStepService stepService;
 
-    public SteppieController(SteppieRoadmapService roadmapService) {
+    public SteppieController(
+            SteppieRoadmapService roadmapService,
+            SteppieStepService stepService) {
+
         this.roadmapService = roadmapService;
+        this.stepService = stepService;
     }
 
     @PostMapping("/roadmaps/generate")
@@ -48,4 +53,47 @@ public class SteppieController {
                 ))
                 .toList();
     }
+
+    @PutMapping("/roadmaps/{roadmapId}/steps/{stepId}")
+    public SteppieStepResponse updateStep(
+            @PathVariable Long roadmapId,
+            @PathVariable Long stepId,
+            @RequestBody SteppieStepUpdateRequest request,
+            Authentication authentication) {
+
+        return stepService.updateStep(
+                authentication.getName(),
+                roadmapId,
+                stepId,
+                request
+        );
+    }
+
+    @PostMapping("/roadmaps/{roadmapId}/steps")
+    public SteppieStepResponse createStep(
+            @PathVariable Long roadmapId,
+            @RequestBody SteppieStepCreateRequest request,
+            Authentication authentication) {
+
+        return stepService.createStep(
+                authentication.getName(),
+                roadmapId,
+                request
+        );
+    }
+
+
+    @DeleteMapping("/roadmaps/{roadmapId}/steps/{stepId}")
+    public void deleteStep(
+            @PathVariable Long roadmapId,
+            @PathVariable Long stepId,
+            Authentication authentication) {
+
+        stepService.deleteStep(
+                authentication.getName(),
+                roadmapId,
+                stepId
+        );
+    }
+
 }

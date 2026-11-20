@@ -24,6 +24,7 @@ public class SteppieAiServiceImpl implements SteppieAiService {
     public SteppieAiServiceImpl(
             @Value("${gemini.api-key:}") String apiKey,
             ObjectMapper objectMapper) {
+
         this.apiKey = apiKey;
         this.objectMapper = objectMapper;
     }
@@ -41,15 +42,15 @@ public class SteppieAiServiceImpl implements SteppieAiService {
                 .apiKey(apiKey)
                 .build();
 
+        // Shorter prompt for faster generation
         String prompt = """
-                You are Steppie, a friendly and encouraging personal
-                learning planner.
+                You are Steppie, a friendly and practical learning planner.
 
-                Create a practical, beginner-friendly roadmap for:
+                Create an actionable beginner-friendly roadmap for:
                 %s
 
-                Divide the roadmap into 3 to 8 weeks.
-                Each week should contain 2 to 4 meaningful steps.
+                Divide the roadmap into 3 to 5 weeks.
+                Each week should contain exactly 2 meaningful steps.
 
                 Every step must include:
                 - weekNumber
@@ -58,9 +59,10 @@ public class SteppieAiServiceImpl implements SteppieAiService {
                 - description
                 - estimatedMinutes
 
-                Make the steps progressive and actionable.
-                Include learning, practice and application.
-                Keep descriptions clear and achievable.
+                Keep titles concise.
+                Keep descriptions to 1 or 2 short sentences.
+                Include learning, practice and real-world application.
+                Make every step achievable.
                 """.formatted(goal);
 
         Schema stepSchema = Schema.builder()
@@ -102,12 +104,23 @@ public class SteppieAiServiceImpl implements SteppieAiService {
                         .responseSchema(responseSchema)
                         .build();
 
+        // Measure Gemini response time
+        long startTime = System.currentTimeMillis();
+
         GenerateContentResponse response =
                 client.models.generateContent(
                         "gemini-3.8-flash",
                         prompt,
                         config
                 );
+
+        long endTime = System.currentTimeMillis();
+
+        System.out.println(
+                "STEPPie AI generation took: "
+                        + (endTime - startTime) / 1000.0
+                        + " seconds"
+        );
 
         try {
             JsonNode stepsJson =

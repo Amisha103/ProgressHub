@@ -22,6 +22,17 @@ async function request(endpoint, options = {}) {
     throw new Error(message || `Request failed (${response.status})`);
   }
 
+  // DELETE requests may return an empty response.
+  if (response.status === 204) {
+    return null;
+  }
+
+  const contentType = response.headers.get('content-type');
+
+  if (!contentType?.includes('application/json')) {
+    return null;
+  }
+
   return response.json();
 }
 
@@ -35,6 +46,26 @@ const steppieService = {
 
   getRoadmaps() {
     return request('/steppie/roadmaps');
+  },
+
+  updateStep(roadmapId, stepId, stepData) {
+    return request(`/steppie/roadmaps/${roadmapId}/steps/${stepId}`, {
+      method: 'PUT',
+      body: JSON.stringify(stepData),
+    });
+  },
+
+  createStep(roadmapId, stepData) {
+    return request(`/steppie/roadmaps/${roadmapId}/steps`, {
+      method: 'POST',
+      body: JSON.stringify(stepData),
+    });
+  },
+
+  deleteStep(roadmapId, stepId) {
+    return request(`/steppie/roadmaps/${roadmapId}/steps/${stepId}`, {
+      method: 'DELETE',
+    });
   },
 };
 

@@ -4,6 +4,8 @@ package com.progresshub.steppie;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/steppie")
 public class SteppieController {
@@ -23,5 +25,27 @@ public class SteppieController {
                 authentication.getName(),
                 request.getGoal()
         );
+    }
+
+    @GetMapping("/roadmaps")
+    public List<SteppieRoadmapResponse> getUserRoadmaps(
+            Authentication authentication) {
+
+        String userEmail = authentication.getName();
+
+        return roadmapService.getUserRoadmaps(userEmail)
+                .stream()
+                .map(roadmap -> new SteppieRoadmapResponse(
+                        roadmap.getId(),
+                        roadmap.getGoal(),
+                        roadmap.getCreatedAt(),
+                        roadmapService.getRoadmapSteps(
+                                        userEmail,
+                                        roadmap.getId()
+                                ).stream()
+                                .map(SteppieStepResponse::from)
+                                .toList()
+                ))
+                .toList();
     }
 }

@@ -1,12 +1,31 @@
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import steppieService from '../services/steppieService'
 
 export default function Steppie() {
   const [goal, setGoal] = useState('')
   const [roadmap, setRoadmap] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    async function loadRoadmaps() {
+      try {
+        const roadmaps = await steppieService.getRoadmaps()
+
+        if (roadmaps?.length > 0) {
+          setRoadmap(roadmaps[0])
+        }
+      } catch (err) {
+        setError(err.message || 'Unable to load your saved roadmaps.')
+      } finally {
+        setInitialLoading(false)
+      }
+    }
+
+    loadRoadmaps()
+  }, [])
 
   async function handleGenerate(e) {
     e.preventDefault()
@@ -18,11 +37,11 @@ export default function Steppie() {
 
     setLoading(true)
     setError('')
-    setRoadmap(null)
 
     try {
       const result = await steppieService.generateRoadmap(goal.trim())
       setRoadmap(result)
+      setGoal('')
     } catch (err) {
       setError(err.message || 'Unable to generate your roadmap.')
     } finally {
@@ -89,7 +108,11 @@ export default function Steppie() {
         )}
       </section>
 
-      {roadmap && (
+      {initialLoading ? (
+        <p className="py-6 text-center text-sm text-slate-500">
+          Loading your saved roadmap...
+        </p>
+      ) : roadmap && (
         <section className="space-y-6">
           <div>
             <p className="text-sm font-semibold text-indigo-600">
@@ -114,40 +137,42 @@ export default function Steppie() {
                   groups[week].push(step)
                   return groups
                 }, {})
-              ).sort(([a], [b]) => Number(a) - Number(b)).map(([week, steps]) => (
-                <div key={week} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <h3 className="mb-4 text-lg font-bold text-indigo-700">
-                    Week {week}
-                  </h3>
+              )
+                .sort(([a], [b]) => Number(a) - Number(b))
+                .map(([week, steps]) => (
+                  <div key={week} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h3 className="mb-4 text-lg font-bold text-indigo-700">
+                      Week {week}
+                    </h3>
 
-                  <div className="space-y-4">
-                    {steps
-                      .sort((a, b) => (a.stepOrder ?? 0) - (b.stepOrder ?? 0))
-                      .map((step) => (
-                        <article
-                          key={step.id ?? `${week}-${step.stepOrder}`}
-                          className="rounded-xl bg-slate-50 p-5"
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <h4 className="font-semibold text-slate-900">
-                              {step.title}
-                            </h4>
+                    <div className="space-y-4">
+                      {steps
+                        .sort((a, b) => (a.stepOrder ?? 0) - (b.stepOrder ?? 0))
+                        .map((step) => (
+                          <article
+                            key={step.id ?? `${week}-${step.stepOrder}`}
+                            className="rounded-xl bg-slate-50 p-5"
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <h4 className="font-semibold text-slate-900">
+                                {step.title}
+                              </h4>
 
-                            {step.estimatedMinutes != null && (
-                              <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
-                                ◷ {step.estimatedMinutes} min
-                              </span>
-                            )}
-                          </div>
+                              {step.estimatedMinutes != null && (
+                                <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
+                                  ◷ {step.estimatedMinutes} min
+                                </span>
+                              )}
+                            </div>
 
-                          <p className="mt-2 text-sm leading-6 text-slate-600">
-                            {step.description}
-                          </p>
-                        </article>
-                      ))}
+                            <p className="mt-2 text-sm leading-6 text-slate-600">
+                              {step.description}
+                            </p>
+                          </article>
+                        ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           ) : (
             <p className="text-sm text-slate-500">

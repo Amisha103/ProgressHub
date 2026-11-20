@@ -32,6 +32,10 @@ const steppieService = {
       body: JSON.stringify({ goal }),
     });
   },
+
+  getRoadmaps() {
+    return request('/steppie/roadmaps');
+  },
 };
 
 export default steppieService;

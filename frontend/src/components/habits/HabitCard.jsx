@@ -23,9 +23,9 @@ export default function HabitCard({
 
   return (
     <Card className="transition hover:shadow-md">
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3">
         <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl ${
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl ${
             habit.color || 'bg-indigo-100'
           }`}
         >
@@ -34,7 +34,7 @@ export default function HabitCard({
 
         <div className="min-w-0 flex-1">
           <h3
-            className={`font-semibold ${
+            className={`text-sm font-semibold ${
               isCompleted
                 ? 'text-slate-400 line-through'
                 : 'text-slate-800'
@@ -43,35 +43,35 @@ export default function HabitCard({
             {habit.name}
           </h3>
 
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-0.5 text-xs text-slate-500">
             {habit.category || 'General'}
           </p>
 
           {habit.description && (
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-1 text-xs text-slate-600">
               {habit.description}
             </p>
           )}
 
           {habit.time && (
-            <p className="mt-2 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-slate-400">
               ⏰ {habit.time}
             </p>
           )}
 
-          <div className="mt-3">
-            <p className="mb-2 text-xs font-medium text-slate-500">
+          <div className="mt-2">
+            <p className="mb-1.5 text-xs font-medium text-slate-500">
               Weekly schedule
             </p>
 
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1">
               {weekdays.map((day) => {
                 const isScheduled = scheduledDays.includes(day.value)
 
                 return (
                   <span
                     key={day.value}
-                    className={`rounded-lg px-2 py-1 text-xs font-medium ${
+                    className={`rounded-md px-2 py-0.5 text-xs font-medium ${
                       isScheduled
                         ? 'bg-indigo-100 text-indigo-700'
                         : 'bg-slate-100 text-slate-400'
@@ -91,7 +91,7 @@ export default function HabitCard({
           </div>
 
           {streak && (
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
               <span className="font-medium text-orange-600">
                 🔥 {streak.currentStreak} day streak
               </span>
@@ -104,7 +104,7 @@ export default function HabitCard({
         </div>
       </div>
 
-      <div className="mt-5 flex gap-2">
+      <div className="mt-3 flex gap-2">
         <Button
           variant={isCompleted ? 'secondary' : 'primary'}
           onClick={onToggle}

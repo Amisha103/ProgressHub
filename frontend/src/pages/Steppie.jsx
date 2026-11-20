@@ -12,6 +12,9 @@ export default function Steppie() {
   const [addingWeek, setAddingWeek] = useState(null)
   const [saving, setSaving] = useState(false)
 
+  const [draggedStep, setDraggedStep] = useState(null)
+  const [dropTarget, setDropTarget] = useState(null)
+
   const [editForm, setEditForm] = useState({
     weekNumber: 1,
     stepOrder: 1,
@@ -109,16 +112,12 @@ export default function Steppie() {
     setError('')
 
     try {
-      await steppieService.updateStep(
-        roadmap.id,
-        editingStep,
-        {
-          ...editForm,
-          weekNumber: Number(editForm.weekNumber),
-          stepOrder: Number(editForm.stepOrder),
-          estimatedMinutes: Number(editForm.estimatedMinutes),
-        }
-      )
+      await steppieService.updateStep(roadmap.id, editingStep, {
+        ...editForm,
+        weekNumber: Number(editForm.weekNumber),
+        stepOrder: Number(editForm.stepOrder),
+        estimatedMinutes: Number(editForm.estimatedMinutes),
+      })
 
       setEditingStep(null)
       await refreshRoadmap()
@@ -183,37 +182,133 @@ export default function Steppie() {
     }
   }
 
-  async function moveStep(step, direction, weekSteps) {
-    const currentIndex = weekSteps.findIndex(
-      (item) => item.id === step.id
-    )
+  // Start dragging a step.
+  function handleDragStart(event, step) {
+    if (saving || editingStep !== null) {
+      event.preventDefault()
+      return
+    }
 
-    const newIndex = currentIndex + direction
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(step.id))
 
-    if (newIndex < 0 || newIndex >= weekSteps.length) return
+    setDraggedStep(step)
+    setDropTarget(null)
+  }
+
+  function handleDragEnd() {
+    setDraggedStep(null)
+    setDropTarget(null)
+  }
+
+  // Determine whether the user is dropping above or below a step.
+  function handleStepDragOver(event, step) {
+    if (!draggedStep || draggedStep.id === step.id || saving) return
+
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const middle = bounds.top + bounds.height / 2
+    const placement = event.clientY < middle ? 'before' : 'after'
+
+    setDropTarget({
+      stepId: step.id,
+      weekNumber: Number(step.weekNumber),
+      placement,
+    })
+  }
+
+  // Save the new position of a dragged step.
+  async function saveDraggedStep(targetWeek, targetOrder) {
+    if (!draggedStep || saving) return
+
+    const step = draggedStep
+
+    if (
+      Number(step.weekNumber) === Number(targetWeek) &&
+      Number(step.stepOrder) === Number(targetOrder)
+    ) {
+      handleDragEnd()
+      return
+    }
 
     setSaving(true)
     setError('')
+    handleDragEnd()
 
     try {
-      await steppieService.updateStep(
-        roadmap.id,
-        step.id,
-        {
-          weekNumber: step.weekNumber,
-          stepOrder: newIndex + 1,
-          title: step.title,
-          description: step.description,
-          estimatedMinutes: step.estimatedMinutes ?? 30,
-        }
-      )
+      await steppieService.updateStep(roadmap.id, step.id, {
+        weekNumber: Number(targetWeek),
+        stepOrder: Number(targetOrder),
+        title: step.title,
+        description: step.description,
+        estimatedMinutes: step.estimatedMinutes ?? 30,
+      })
 
       await refreshRoadmap()
     } catch (err) {
       setError(err.message || 'Unable to reorder this step.')
+      await refreshRoadmap()
     } finally {
       setSaving(false)
     }
+  }
+
+  // Drop a step before or after another step.
+  async function handleDropOnStep(event, targetStep, placement) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (!draggedStep || draggedStep.id === targetStep.id) {
+      handleDragEnd()
+      return
+    }
+
+    const targetWeek = Number(targetStep.weekNumber)
+
+    const targetWeekSteps = (roadmap?.steps || [])
+      .filter(
+        (step) =>
+          Number(step.weekNumber) === targetWeek &&
+          step.id !== draggedStep.id
+      )
+      .sort((a, b) => a.stepOrder - b.stepOrder)
+
+    const targetIndex = targetWeekSteps.findIndex(
+      (step) => step.id === targetStep.id
+    )
+
+    if (targetIndex === -1) {
+      handleDragEnd()
+      return
+    }
+
+    const insertIndex =
+      targetIndex + (placement === 'after' ? 1 : 0)
+
+    await saveDraggedStep(targetWeek, insertIndex + 1)
+  }
+
+  // Drop a step at the end of a week.
+  async function handleDropAtWeekEnd(event, weekNumber) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (!draggedStep) return
+
+    const targetWeekSteps = (roadmap?.steps || [])
+      .filter(
+        (step) =>
+          Number(step.weekNumber) === Number(weekNumber) &&
+          step.id !== draggedStep.id
+      )
+      .sort((a, b) => a.stepOrder - b.stepOrder)
+
+    await saveDraggedStep(
+      Number(weekNumber),
+      targetWeekSteps.length + 1
+    )
   }
 
   const groupedSteps = (roadmap?.steps || []).reduce((groups, step) => {
@@ -225,19 +320,26 @@ export default function Steppie() {
     return groups
   }, {})
 
-  const weeks = Object.entries(groupedSteps)
-    .sort(([a], [b]) => Number(a) - Number(b))
+  const weeks = Object.entries(groupedSteps).sort(
+    ([a], [b]) => Number(a) - Number(b)
+  )
 
   const lastWeek = Math.max(
     1,
     ...weeks.map(([week]) => Number(week))
   )
 
+  const cardHover =
+    'rounded-xl border border-transparent bg-slate-50 p-5 transition-all duration-300 ease-in-out hover:-translate-y-1 hover:border-indigo-200 hover:bg-white hover:shadow-lg'
+
+  const actionHover =
+    'transition-all duration-200 ease-in-out hover:-translate-y-0.5 active:translate-y-0 disabled:translate-y-0 disabled:cursor-not-allowed'
+
   return (
     <div className="mx-auto max-w-5xl space-y-8">
 
       {/* Steppie introduction */}
-      <section className="rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-600 p-8 text-white shadow-lg">
+      <section className="rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-600 p-8 text-white shadow-lg transition-all duration-300 hover:shadow-xl">
         <p className="text-sm font-semibold uppercase tracking-widest text-indigo-100">
           Meet your AI growth companion
         </p>
@@ -253,7 +355,7 @@ export default function Steppie() {
       </section>
 
       {/* Goal generator */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-md">
         <h2 className="text-xl font-bold text-slate-900">
           What's your big goal?
         </h2>
@@ -270,7 +372,7 @@ export default function Steppie() {
             rows={4}
             maxLength={1000}
             disabled={loading}
-            className="w-full resize-y rounded-xl border border-slate-200 p-4 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-50"
+            className="w-full resize-y rounded-xl border border-slate-200 p-4 text-sm outline-none transition-all duration-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-50"
           />
 
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -281,7 +383,7 @@ export default function Steppie() {
             <button
               type="submit"
               disabled={loading || !goal.trim()}
-              className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className={`${actionHover} rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700 hover:shadow-lg disabled:opacity-50`}
             >
               {loading ? 'Creating your roadmap...' : '✦ Generate my roadmap'}
             </button>
@@ -318,9 +420,12 @@ export default function Steppie() {
             <p className="mt-2 text-sm text-slate-500">
               {roadmap.steps?.length || 0} steps to help you move forward.
             </p>
+
+            <p className="mt-2 text-xs text-slate-400">
+              💡 Drag the ⠿ handle on any step and drop it wherever you want.
+            </p>
           </div>
 
-          {/* Add another week */}
           <button
             type="button"
             onClick={() => {
@@ -328,7 +433,7 @@ export default function Steppie() {
               setEditingStep(null)
               setError('')
             }}
-            className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
+            className={`${actionHover} rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:border-indigo-300 hover:bg-indigo-100 hover:shadow-md`}
           >
             + Add a new week
           </button>
@@ -343,7 +448,7 @@ export default function Steppie() {
                 return (
                   <div
                     key={week}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:border-indigo-100 hover:shadow-md"
                   >
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                       <h3 className="text-lg font-bold text-indigo-700">
@@ -357,195 +462,243 @@ export default function Steppie() {
                           setEditingStep(null)
                           setError('')
                         }}
-                        className="rounded-lg bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+                        className={`${actionHover} rounded-lg bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 hover:shadow-sm`}
                       >
                         + Add step
                       </button>
                     </div>
 
                     <div className="space-y-4">
-                      {steps.map((step, index) => (
-                        <article
-                          key={step.id}
-                          className="rounded-xl bg-slate-50 p-5"
-                        >
-                          {editingStep === step.id ? (
-                            <form
-                              onSubmit={handleUpdateStep}
-                              className="space-y-4"
-                            >
-                              <h4 className="font-semibold text-slate-900">
-                                Edit step
-                              </h4>
+                      {steps.map((step) => {
+                        const isDropBefore =
+                          dropTarget?.stepId === step.id &&
+                          dropTarget?.placement === 'before'
 
-                              <div>
-                                <label className="mb-1 block text-sm font-medium text-slate-700">
-                                  Title
-                                </label>
-                                <input
-                                  required
-                                  maxLength={300}
-                                  value={editForm.title}
-                                  onChange={(e) => setEditForm({
-                                    ...editForm,
-                                    title: e.target.value,
-                                  })}
-                                  className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm outline-none focus:border-indigo-500"
-                                />
-                              </div>
+                        const isDropAfter =
+                          dropTarget?.stepId === step.id &&
+                          dropTarget?.placement === 'after'
 
-                              <div>
-                                <label className="mb-1 block text-sm font-medium text-slate-700">
-                                  Description
-                                </label>
-                                <textarea
-                                  required
-                                  maxLength={2000}
-                                  rows={3}
-                                  value={editForm.description}
-                                  onChange={(e) => setEditForm({
-                                    ...editForm,
-                                    description: e.target.value,
-                                  })}
-                                  className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm outline-none focus:border-indigo-500"
-                                />
-                              </div>
-
-                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                <div>
-                                  <label className="mb-1 block text-sm font-medium text-slate-700">
-                                    Week
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    required
-                                    value={editForm.weekNumber}
-                                    onChange={(e) => setEditForm({
-                                      ...editForm,
-                                      weekNumber: e.target.value,
-                                    })}
-                                    className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm"
-                                  />
-                                </div>
-
-                                <div>
-                                  <label className="mb-1 block text-sm font-medium text-slate-700">
-                                    Position
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    required
-                                    value={editForm.stepOrder}
-                                    onChange={(e) => setEditForm({
-                                      ...editForm,
-                                      stepOrder: e.target.value,
-                                    })}
-                                    className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm"
-                                  />
-                                </div>
-
-                                <div>
-                                  <label className="mb-1 block text-sm font-medium text-slate-700">
-                                    Minutes
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    required
-                                    value={editForm.estimatedMinutes}
-                                    onChange={(e) => setEditForm({
-                                      ...editForm,
-                                      estimatedMinutes: e.target.value,
-                                    })}
-                                    className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm"
-                                  />
-                                </div>
-                              </div>
-
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  type="submit"
-                                  disabled={saving}
-                                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
-                                >
-                                  {saving ? 'Saving...' : 'Save changes'}
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingStep(null)}
-                                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </form>
-                          ) : (
-                            <>
-                              <div className="flex flex-wrap items-start justify-between gap-3">
+                        return (
+                          <article
+                            key={step.id}
+                            onDragOver={(event) =>
+                              handleStepDragOver(event, step)
+                            }
+                            onDrop={(event) =>
+                              handleDropOnStep(
+                                event,
+                                step,
+                                dropTarget?.placement || 'before'
+                              )
+                            }
+                            className={`${cardHover} ${
+                              draggedStep?.id === step.id
+                                ? 'scale-[0.98] opacity-40'
+                                : ''
+                            } ${
+                              isDropBefore
+                                ? 'border-t-4 border-t-indigo-500'
+                                : ''
+                            } ${
+                              isDropAfter
+                                ? 'border-b-4 border-b-indigo-500'
+                                : ''
+                            }`}
+                          >
+                            {editingStep === step.id ? (
+                              <form onSubmit={handleUpdateStep} className="space-y-4">
                                 <h4 className="font-semibold text-slate-900">
-                                  {step.title}
+                                  Edit step
                                 </h4>
 
-                                {step.estimatedMinutes != null && (
-                                  <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
-                                    ◷ {step.estimatedMinutes} min
-                                  </span>
-                                )}
-                              </div>
+                                <div>
+                                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                                    Title
+                                  </label>
+                                  <input
+                                    required
+                                    maxLength={300}
+                                    value={editForm.title}
+                                    onChange={(e) => setEditForm({
+                                      ...editForm,
+                                      title: e.target.value,
+                                    })}
+                                    className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                                  />
+                                </div>
 
-                              <p className="mt-2 text-sm leading-6 text-slate-600">
-                                {step.description}
-                              </p>
+                                <div>
+                                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                                    Description
+                                  </label>
+                                  <textarea
+                                    required
+                                    maxLength={2000}
+                                    rows={3}
+                                    value={editForm.description}
+                                    onChange={(e) => setEditForm({
+                                      ...editForm,
+                                      description: e.target.value,
+                                    })}
+                                    className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                                  />
+                                </div>
 
-                              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
-                                <button
-                                  type="button"
-                                  disabled={saving || index === 0}
-                                  onClick={() => moveStep(step, -1, steps)}
-                                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-30"
-                                  title="Move up"
-                                >
-                                  ↑ Move up
-                                </button>
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                  <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                      Week
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      required
+                                      value={editForm.weekNumber}
+                                      onChange={(e) => setEditForm({
+                                        ...editForm,
+                                        weekNumber: e.target.value,
+                                      })}
+                                      className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm"
+                                    />
+                                  </div>
 
-                                <button
-                                  type="button"
-                                  disabled={saving || index === steps.length - 1}
-                                  onClick={() => moveStep(step, 1, steps)}
-                                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-30"
-                                  title="Move down"
-                                >
-                                  ↓ Move down
-                                </button>
+                                  <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                      Position
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      required
+                                      value={editForm.stepOrder}
+                                      onChange={(e) => setEditForm({
+                                        ...editForm,
+                                        stepOrder: e.target.value,
+                                      })}
+                                      className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm"
+                                    />
+                                  </div>
 
-                                <button
-                                  type="button"
-                                  disabled={saving}
-                                  onClick={() => startEditing(step)}
-                                  className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
-                                >
-                                  ✎ Edit
-                                </button>
+                                  <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                      Minutes
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      required
+                                      value={editForm.estimatedMinutes}
+                                      onChange={(e) => setEditForm({
+                                        ...editForm,
+                                        estimatedMinutes: e.target.value,
+                                      })}
+                                      className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm"
+                                    />
+                                  </div>
+                                </div>
 
-                                <button
-                                  type="button"
-                                  disabled={saving}
-                                  onClick={() => handleDeleteStep(step)}
-                                  className="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </article>
-                      ))}
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    type="submit"
+                                    disabled={saving}
+                                    className={`${actionHover} rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 hover:shadow-md disabled:opacity-50`}
+                                  >
+                                    {saving ? 'Saving...' : 'Save changes'}
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingStep(null)}
+                                    className={`${actionHover} rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100`}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </form>
+                            ) : (
+                              <>
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <div className="flex items-start gap-3">
+                                    <span
+                                      draggable={!saving && editingStep === null}
+                                      onDragStart={(event) =>
+                                        handleDragStart(event, step)
+                                      }
+                                      onDragEnd={handleDragEnd}
+                                      title="Drag to reorder this step"
+                                      className="mt-0.5 cursor-grab select-none rounded-lg bg-white px-2 py-1 text-lg text-slate-400 shadow-sm transition-colors hover:bg-indigo-100 hover:text-indigo-700 active:cursor-grabbing"
+                                    >
+                                      ⠿
+                                    </span>
+
+                                    <h4 className="pt-1 font-semibold text-slate-900">
+                                      {step.title}
+                                    </h4>
+                                  </div>
+
+                                  {step.estimatedMinutes != null && (
+                                    <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 transition-colors duration-200 hover:bg-indigo-100">
+                                      ◷ {step.estimatedMinutes} min
+                                    </span>
+                                  )}
+                                </div>
+
+                                <p className="mt-2 text-sm leading-6 text-slate-600">
+                                  {step.description}
+                                </p>
+
+                                <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
+                                  <button
+                                    type="button"
+                                    disabled={saving}
+                                    onClick={() => startEditing(step)}
+                                    className={`${actionHover} rounded-lg bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-200 hover:shadow-sm disabled:opacity-50`}
+                                  >
+                                    ✎ Edit
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    disabled={saving}
+                                    onClick={() => handleDeleteStep(step)}
+                                    className={`${actionHover} rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-200 hover:shadow-sm disabled:opacity-50`}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </article>
+                        )
+                      })}
                     </div>
 
-                    {/* Add step form */}
+                    {/* Drop zone at the end of this week */}
+                    <div
+                      onDragOver={(event) => {
+                        if (!draggedStep) return
+                        event.preventDefault()
+                        event.dataTransfer.dropEffect = 'move'
+                        setDropTarget({
+                          weekNumber: Number(week),
+                          placement: 'end',
+                        })
+                      }}
+                      onDrop={(event) =>
+                        handleDropAtWeekEnd(event, Number(week))
+                      }
+                      className={`mt-4 rounded-xl border-2 border-dashed p-3 text-center text-xs transition-all duration-200 ${
+                        dropTarget?.weekNumber === Number(week) &&
+                        dropTarget?.placement === 'end'
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                          : 'border-slate-200 text-slate-400 hover:border-indigo-300 hover:bg-indigo-50/50'
+                      }`}
+                    >
+                      {draggedStep
+                        ? '↓ Drop here to move to the end of this week'
+                        : 'Drag a step here to place it at the end of this week'}
+                    </div>
+
                     {addingWeek === Number(week) && (
                       <form
                         onSubmit={handleAddStep}
@@ -597,7 +750,7 @@ export default function Steppie() {
                           <button
                             type="submit"
                             disabled={saving}
-                            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                            className={`${actionHover} rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50`}
                           >
                             {saving ? 'Adding...' : 'Add step'}
                           </button>
@@ -605,7 +758,7 @@ export default function Steppie() {
                           <button
                             type="button"
                             onClick={() => setAddingWeek(null)}
-                            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600"
+                            className={`${actionHover} rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-100`}
                           >
                             Cancel
                           </button>
@@ -622,11 +775,10 @@ export default function Steppie() {
             </p>
           )}
 
-          {/* Add step to a new week */}
           {addingWeek !== null && !groupedSteps[addingWeek] && (
             <form
               onSubmit={handleAddStep}
-              className="space-y-3 rounded-2xl border border-indigo-200 bg-white p-6 shadow-sm"
+              className="space-y-3 rounded-2xl border border-indigo-200 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-md"
             >
               <h3 className="font-bold text-indigo-700">
                 Add a step to Week {addingWeek}
@@ -674,7 +826,7 @@ export default function Steppie() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  className={`${actionHover} rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50`}
                 >
                   {saving ? 'Adding...' : 'Add step'}
                 </button>
@@ -682,7 +834,7 @@ export default function Steppie() {
                 <button
                   type="button"
                   onClick={() => setAddingWeek(null)}
-                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600"
+                  className={`${actionHover} rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-100`}
                 >
                   Cancel
                 </button>

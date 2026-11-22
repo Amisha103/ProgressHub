@@ -58,6 +58,9 @@ const steppieScheduledTaskService = {
       body: JSON.stringify({ scheduledDate }),
     });
   },
+  getForRoadmap(roadmapId) {
+  return request(`/steppie/scheduled-tasks/roadmaps/${roadmapId}`);
+},
 };
 
 export default steppieScheduledTaskService;

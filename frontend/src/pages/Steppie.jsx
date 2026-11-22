@@ -15,6 +15,8 @@ export default function Steppie() {
 
   const [scheduleLoading, setScheduleLoading] = useState(false)
   const [scheduleMessage, setScheduleMessage] = useState('')
+  const [alreadyScheduled, setAlreadyScheduled] = useState(false)
+  const [checkingSchedule, setCheckingSchedule] = useState(false)
 
   const [draggedStep, setDraggedStep] = useState(null)
   const [dropTarget, setDropTarget] = useState(null)
@@ -42,17 +44,41 @@ export default function Steppie() {
       const roadmaps = await steppieService.getRoadmaps()
 
       if (roadmaps?.length > 0) {
-        setRoadmap((current) => {
-          if (current) {
-            return roadmaps.find((r) => r.id === current.id) || roadmaps[0]
-          }
-          return roadmaps[0]
-        })
+        const selectedRoadmap = roadmap
+          ? roadmaps.find((r) => r.id === roadmap.id) || roadmaps[0]
+          : roadmaps[0]
+
+        setRoadmap(selectedRoadmap)
+        await checkRoadmapSchedule(selectedRoadmap.id)
+      } else {
+        setRoadmap(null)
+        setAlreadyScheduled(false)
       }
     } catch (err) {
       setError(err.message || 'Unable to load your saved roadmaps.')
     } finally {
       setInitialLoading(false)
+    }
+  }
+
+  async function checkRoadmapSchedule(roadmapId) {
+    if (!roadmapId) {
+      setAlreadyScheduled(false)
+      return
+    }
+
+    setCheckingSchedule(true)
+
+    try {
+      const tasks =
+        await steppieScheduledTaskService.getForRoadmap(roadmapId)
+
+      setAlreadyScheduled(tasks?.length > 0)
+    } catch (err) {
+      console.error('Unable to check roadmap schedule:', err)
+      setAlreadyScheduled(false)
+    } finally {
+      setCheckingSchedule(false)
     }
   }
 
@@ -76,10 +102,12 @@ export default function Steppie() {
     setLoading(true)
     setError('')
     setScheduleMessage('')
+    setAlreadyScheduled(false)
 
     try {
       const result = await steppieService.generateRoadmap(goal.trim())
       setRoadmap(result)
+      await checkRoadmapSchedule(result.id)
       setGoal('')
       setEditingStep(null)
       setAddingWeek(null)
@@ -105,6 +133,7 @@ export default function Steppie() {
       const scheduledTasks =
         await steppieScheduledTaskService.scheduleRoadmap(roadmap.id)
 
+      setAlreadyScheduled(scheduledTasks?.length > 0)
       setScheduleMessage(
         `Your roadmap is now in your daily schedule! ${
           scheduledTasks?.length ?? roadmap.steps.length
@@ -474,20 +503,29 @@ export default function Steppie() {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={handleAddToDailySchedule}
-                disabled={
-                  scheduleLoading ||
-                  saving ||
-                  !roadmap.steps?.length
-                }
-                className={`${actionHover} shrink-0 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50`}
-              >
-                {scheduleLoading
-                  ? 'Adding to schedule...'
-                  : '＋ Add to Daily Schedule'}
-              </button>
+              {alreadyScheduled ? (
+                <span className="shrink-0 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-semibold text-green-700">
+                  ✓ Already in Daily Schedule
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleAddToDailySchedule}
+                  disabled={
+                    checkingSchedule ||
+                    scheduleLoading ||
+                    saving ||
+                    !roadmap.steps?.length
+                  }
+                  className={`${actionHover} shrink-0 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50`}
+                >
+                  {checkingSchedule
+                    ? 'Checking schedule...'
+                    : scheduleLoading
+                      ? 'Adding to schedule...'
+                      : '＋ Add to Daily Schedule'}
+                </button>
+              )}
             </div>
 
             {scheduleMessage && (

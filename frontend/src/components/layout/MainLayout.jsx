@@ -38,7 +38,7 @@ export default function MainLayout() {
       <div className="min-w-0 flex-1 md:ml-64">
         <Header onMenuClick={() => setIsMobileMenuOpen(true)} />
 
-        <main className="mx-auto w-full max-w-7xl p-5 sm:p-8">
+        <main className="mx-auto w-full max-w-[1600px] p-5 sm:p-8">
           <Outlet />
         </main>
       </div>

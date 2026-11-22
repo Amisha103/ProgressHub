@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react'
 import steppieService from '../services/steppieService'
+import steppieScheduledTaskService from '../services/steppieScheduledTaskService'
 
 export default function Steppie() {
   const [goal, setGoal] = useState('')
@@ -11,6 +12,9 @@ export default function Steppie() {
   const [editingStep, setEditingStep] = useState(null)
   const [addingWeek, setAddingWeek] = useState(null)
   const [saving, setSaving] = useState(false)
+
+  const [scheduleLoading, setScheduleLoading] = useState(false)
+  const [scheduleMessage, setScheduleMessage] = useState('')
 
   const [draggedStep, setDraggedStep] = useState(null)
   const [dropTarget, setDropTarget] = useState(null)
@@ -71,6 +75,7 @@ export default function Steppie() {
 
     setLoading(true)
     setError('')
+    setScheduleMessage('')
 
     try {
       const result = await steppieService.generateRoadmap(goal.trim())
@@ -82,6 +87,35 @@ export default function Steppie() {
       setError(err.message || 'Unable to generate your roadmap.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Add the complete roadmap to the daily schedule.
+  async function handleAddToDailySchedule() {
+    if (!roadmap?.id || !roadmap.steps?.length) {
+      setError('There are no roadmap steps to schedule.')
+      return
+    }
+
+    setScheduleLoading(true)
+    setScheduleMessage('')
+    setError('')
+
+    try {
+      const scheduledTasks =
+        await steppieScheduledTaskService.scheduleRoadmap(roadmap.id)
+
+      setScheduleMessage(
+        `Your roadmap is now in your daily schedule! ${
+          scheduledTasks?.length ?? roadmap.steps.length
+        } steps are scheduled, starting tomorrow.`
+      )
+    } catch (err) {
+      setError(
+        err.message || 'Unable to add this roadmap to your daily schedule.'
+      )
+    } finally {
+      setScheduleLoading(false)
     }
   }
 
@@ -424,6 +458,55 @@ export default function Steppie() {
             <p className="mt-2 text-xs text-slate-400">
               💡 Drag the ⠿ handle on any step and drop it wherever you want.
             </p>
+          </div>
+
+          {/* Add roadmap to daily schedule */}
+          <div className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="font-bold text-indigo-900">
+                  Ready to turn your roadmap into action?
+                </h3>
+
+                <p className="mt-1 text-sm text-indigo-700">
+                  Add all your steps to your daily schedule, starting tomorrow.
+                  You can reschedule individual tasks later.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddToDailySchedule}
+                disabled={
+                  scheduleLoading ||
+                  saving ||
+                  !roadmap.steps?.length
+                }
+                className={`${actionHover} shrink-0 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                {scheduleLoading
+                  ? 'Adding to schedule...'
+                  : '＋ Add to Daily Schedule'}
+              </button>
+            </div>
+
+            {scheduleMessage && (
+              <p
+                role="status"
+                className="mt-4 rounded-xl bg-white p-3 text-sm font-medium text-green-700"
+              >
+                ✓ {scheduleMessage}
+              </p>
+            )}
+
+            {error && (
+              <p
+                role="alert"
+                className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600"
+              >
+                {error}
+              </p>
+            )}
           </div>
 
           <button

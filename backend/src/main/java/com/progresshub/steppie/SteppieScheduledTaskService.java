@@ -101,7 +101,23 @@ public class SteppieScheduledTaskService {
                 .findAllByUserIdAndScheduledDateOrderByIdAsc(
                         user.getId(), date);
     }
+    @Transactional(readOnly = true)
+    public List<SteppieScheduledTask> getTasksForRoadmap(
+            String userEmail,
+            Long roadmapId) {
 
+        User user = getUser(userEmail);
+
+        roadmapRepository.findByIdAndUserId(roadmapId, user.getId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Roadmap not found"));
+
+        return scheduledTaskRepository
+                .findAllByRoadmapIdAndUserIdOrderByScheduledDateAsc(
+                        roadmapId,
+                        user.getId()
+                );
+    }
     @Transactional
     public SteppieScheduledTask updateStatus(
             String userEmail,

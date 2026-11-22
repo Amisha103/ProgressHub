@@ -75,4 +75,16 @@ public class SteppieScheduledTaskController {
                 )
         );
     }
+    @GetMapping("/roadmaps/{roadmapId}")
+    public List<SteppieScheduledTaskResponse> getTasksForRoadmap(
+            Authentication authentication,
+            @PathVariable Long roadmapId) {
+
+        return scheduledTaskService.getTasksForRoadmap(
+                        authentication.getName(),
+                        roadmapId
+                ).stream()
+                .map(SteppieScheduledTaskResponse::from)
+                .toList();
+    }
 }
